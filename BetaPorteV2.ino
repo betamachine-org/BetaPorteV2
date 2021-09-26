@@ -1,6 +1,6 @@
 /*************************************************
  *************************************************
-    Sketch BetaFour.ino   Gestion d'un four de poterie
+    Sketch BetaPorteV2.ino   Gestion d'un four de poterie
 
     Copyright 20201 Pierre HENRY net23@frdev.com All - right reserved.
 
@@ -54,10 +54,12 @@ enum tUserEventCode {
   evBP0 = 100,
   evLed0,
   evLcdUpdate,  //update LCD
+  evCheckBadge,  //timer lecture etat badge
+  evBadgeIn,            // Arrivee du badge
+  evBadgeOut,           // Sortie du badge
   // evenement action
   doReset,
 };
-
 
 
 
@@ -82,10 +84,14 @@ enum tUserEventCode {
 #include <LiquidCrystal_PCF8574.h>
 LiquidCrystal_PCF8574 lcd(LCD_I2CADR); // set the LCD address
 
+// Objet d'interface pour le lecteur de badge
+#include "BadgeNfc_PN532_I2C.h"
+// Taille maxide la chaine RFID en lecture
+#define MAXRFIDSIZE 100
+BadgeNfc_PN532_I2C lecteurBadge;   // instance du lecteur de badge
+
 // just to shut off wifi on this basic version
 #include <ESP8266WiFi.h>
-
-
 
 bool sleepOk = true;
 int  multi = 0; // nombre de clic rapide
@@ -98,6 +104,10 @@ displayMode_t  displayMode = dmInfo;
 
 bool  displayRedraw = true;  // true si il faut reafficher entierement le lcd
 
+// Variable d'application locale
+bool     badgePresent = false;
+
+
 void setup() {
 
   Serial.begin(115200);
@@ -108,14 +118,14 @@ void setup() {
   // Start instance
   MyEvents.begin();
 
-  Serial.println("Bonjour ....");
+  Serial.println(F("Bonjour ...."));
 
   //Init I2C
   Wire.begin(I2C_SDA, I2C_SCL);
 
   //  Check LCD
   if (!checkI2C(LCD_I2CADR)) {
-    fatalError(3);
+    Serial.println(F("No LCD detected"));
   }
 
   // Init LCD
@@ -123,13 +133,36 @@ void setup() {
   lcd.setBacklight(100);
   lcd.println(F(APP_NAME));
 
+  //Reset PN532
+  //  digitalWrite(POWER_PN532, LOW);   //Reset PN532
+  //  delay(500);
+  //  digitalWrite(POWER_PN532, HIGH);   //Reset PN532
+  //  pinMode(POWER_PN532, INPUT);
+
+
+  // check PN532
+  // Initialisation  Lecteur Badge  (sizebuffer retry  timeout )
+  if  (lecteurBadge.begin(MAXRFIDSIZE) != true ) {
+    Serial.println(F("NFC not ok."));
+    lcd.setCursor(0, 1);
+    lcd.print(F(LCD_CLREOL "Erreur NFC"));
+    fatalError(2);
+
+  }
+  lcd.print(F("\r" LCD_CLREOL ));
+  Serial.println(F("NFC Module Ok."));
+
+  MyEvents.pushDelayEvent(1000, evCheckBadge); // arme la lecture du badge
+
+
+
 
   // a beep
-  tone(BeepPin, 880, 500);
+  beep( 880, 500);
   delay(500);
-  tone(BeepPin, 988, 500);
+  beep( 988, 500);
   delay(500);
-  tone(BeepPin, 1047, 500);
+  beep( 1047, 500);
 
 }
 
@@ -160,7 +193,52 @@ void loop() {
     case ev1Hz:
       break;
 
+    // Detection changement d'etat badge
+    case evCheckBadge: {
+        int rateCheckBadge = badgePresent  ? 1000 : 250;
+        MyEvents.pushDelayEvent(rateCheckBadge, evCheckBadge); // je reessaye plus tard
+        // un badge est il present ?
+        bool etatBadge = lecteurBadge.badgePresent();
+        if (etatBadge == badgePresent) {
+          // toujours dans le meme etat
+          //          Serial.println(F("PWD"));
+          if ( !lecteurBadge.powerDownMode() ) {
 
+            lcd.clear();
+            lcd.print(F("Reboot NFC"));
+            if (Serial) Serial.print(F("Reboot NFC"));
+            fatalError(2);
+          }
+          break; // non alors plus rien a faire
+        }
+        badgePresent = etatBadge;
+        D_println(badgePresent);
+        rateCheckBadge = badgePresent  ? 1000 : 250;
+        MyEvents.pushDelayEvent(rateCheckBadge, evCheckBadge); // je reessaye plus tard
+        MyEvents.pushEvent((badgePresent ? evBadgeIn : evBadgeOut)); // Signalement a l'application
+      }
+      break;
+
+    // Arrivee d'un badge
+    case evBadgeIn: {
+        MyEvents.pushDelayEvent(2 * 1000, evCheckBadge); // on laisse du temps a l'application pour lire et transmettre au moins une fois
+        //leBadge = sBadge();
+        // Affichage sur l'ecran
+        //MyEvents.pushEvent(evShowLcd);
+        lcd.clear();
+        delay(500);
+        lcd.setCursor(0, 2);
+        lcd.print(F("Bonjour ..."));
+        if (Serial) {
+          Serial.print(F("UID "));
+          for (byte N = 1; N <= lecteurBadge.UUIDTag[0]; N++) {
+            Serial.print(Hex2Char( lecteurBadge.UUIDTag[N] >> 4));
+            Serial.print(Hex2Char( lecteurBadge.UUIDTag[N] & 0xF));
+          }
+          Serial.println();
+        }
+      }
+      break;
 
 
     case doReset:
@@ -218,7 +296,6 @@ void loop() {
 
 // helpers
 
-
 // Check I2C
 bool checkI2C(const uint8_t i2cAddr)
 {
@@ -240,16 +317,30 @@ void fatalError(const uint8_t error) {
   lcd.println(error);
 
   // display error on LED_BUILTIN
-  for (uint8_t N = 1; N <= 10; N++) {
+  for (uint8_t N = 1; N <= 5; N++) {
     for (uint8_t N1 = 1; N1 <= error; N1++) {
       delay(150);
       MyLed0.setOn(true);
+      beep(988, 100);
       delay(150);
       MyLed0.setOn(false);
-      tone(BeepPin, 988, 100);
     }
     delay(500);
   }
   delay(2000);
   helperReset();
+}
+
+
+void beep(const uint16_t frequence, const uint16_t duree) {
+  tone(BeepPin, frequence, duree);
+}
+
+//#define Hex2Char(X) (X + (X <= 9 ? '0' : ('A' - 10)))
+char Hex2Char( byte aByte) {
+  return aByte + (aByte <= 9 ? '0' : 'A' -  10);
+}
+//#define Char2Hex(X) (X  - (X <= '9' ? '0' : ('A' - 10)))
+byte Char2Hex(unsigned char aChar) {
+  return aChar  - (aChar <= '9' ? '0' : 'A' - 10);
 }
