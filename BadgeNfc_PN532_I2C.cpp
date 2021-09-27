@@ -111,6 +111,17 @@ bool BadgeNfc_PN532_I2C::badgePresent() {
   return (isOk);
 }
 
+#define Hex2Char(X) (char)((X) + ((X) <= 9 ? '0' : ('A' - 10)))
+
+String BadgeNfc_PN532_I2C::getUUIDTag() {
+  String result = "";
+  for (int N = 1; N <= UUIDTag[0]; N++) {
+    result += Hex2Char( UUIDTag[N] >> 4);
+    result += Hex2Char( UUIDTag[N] & 0xF);
+  
+   }
+   return (result);
+}
 
 // Lecture du message NFC si un badge a ete detecté.
 // Attention a la memoire : 300 + 2xBuffersize

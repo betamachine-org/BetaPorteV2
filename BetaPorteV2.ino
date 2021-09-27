@@ -36,6 +36,8 @@
 #include "ESP8266.h"
 
 #define APP_NAME "BetaPorte V2.0"
+#define NODE_NAME     "Node0"
+
 //
 /* Evenements du Manager (voir EventsManager.h)
   evNill = 0,      // No event  about 1 every milisecond but do not use them for delay Use pushDelayEvent(delay,event)
@@ -48,6 +50,7 @@
   evInString,
 */
 
+#define Hex2Char(X) (char)((X) + ((X) <= 9 ? '0' : ('A' - 10)))
 // Liste des evenements specifique a ce projet
 enum tUserEventCode {
   // evenement utilisateurs
@@ -93,6 +96,7 @@ BadgeNfc_PN532_I2C lecteurBadge;   // instance du lecteur de badge
 // just to shut off wifi on this basic version
 #include <ESP8266WiFi.h>
 
+
 bool sleepOk = true;
 int  multi = 0; // nombre de clic rapide
 
@@ -106,6 +110,8 @@ bool  displayRedraw = true;  // true si il faut reafficher entierement le lcd
 
 // Variable d'application locale
 bool     badgePresent = false;
+bool     WiFiConnected = false;
+
 
 
 void setup() {
@@ -113,10 +119,21 @@ void setup() {
   Serial.begin(115200);
   Serial.println(F("\r\n\n" APP_NAME));
 
-  WiFi.forceSleepBegin();  // this do  a WiFiMode OFF  !!! 21ma
+  //WiFi.forceSleepBegin();  // this do  a WiFiMode OFF  !!! 21ma
 
   // Start instance
   MyEvents.begin();
+
+  D_println(WiFi.getMode());
+  // This exemple supose a WiFi connection so if we are not WIFI_STA mode we force it
+  if (WiFi.getMode() != WIFI_STA) {
+    Serial.println(F("!!! Force WiFi to STA mode !!!  should be done only ONCE even if we power off "));
+    WiFi.mode(WIFI_STA);
+
+    //WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  }
+
+
 
   Serial.println(F("Bonjour ...."));
 
@@ -186,11 +203,40 @@ void loop() {
 
 
 
-    case ev10Hz:
+    case ev10Hz: {
+        // check for connection to local WiFi
+        static uint8_t oldWiFiStatus = 999;
+        uint8_t  WiFiStatus = WiFi.status();
 
+        if (oldWiFiStatus != WiFiStatus) {
+          oldWiFiStatus = WiFiStatus;
+          D_println(WiFiStatus);
+          //    WL_IDLE_STATUS      = 0,
+          //    WL_NO_SSID_AVAIL    = 1,
+          //    WL_SCAN_COMPLETED   = 2,
+          //    WL_CONNECTED        = 3,
+          //    WL_CONNECT_FAILED   = 4,
+          //    WL_CONNECTION_LOST  = 5,
+          //    WL_DISCONNECTED     = 6
+          WiFiConnected = (WiFiStatus == WL_CONNECTED);
+          D_println(WiFiConnected);
+        }
+      }
       break;
 
     case ev1Hz:
+      // If we are not connected we warn the user every 30 seconds that we need to update credential
+      if ( !WiFiConnected && second() % 30 ==  15) {
+        // every 30 sec
+        static uint16_t lastWarn = millis();
+        if ( millis() - lastWarn > 30 * 1000 ) {
+          lastWarn = millis();
+          Serial.print(F("device not connected to local "));
+          D_println(WiFi.SSID());
+          Serial.println(F("type 'W' to adjust WiFi credential"));
+        }
+      }
+
       break;
 
     // Detection changement d'etat badge
@@ -228,15 +274,13 @@ void loop() {
         lcd.clear();
         delay(500);
         lcd.setCursor(0, 2);
-        lcd.print(F("Bonjour ..."));
+        lcd.println(F("Bonjour ..."));
+        String UUID = lecteurBadge.getUUIDTag();
         if (Serial) {
           Serial.print(F("UID "));
-          for (byte N = 1; N <= lecteurBadge.UUIDTag[0]; N++) {
-            Serial.print(Hex2Char( lecteurBadge.UUIDTag[N] >> 4));
-            Serial.print(Hex2Char( lecteurBadge.UUIDTag[N] & 0xF));
-          }
-          Serial.println();
+          Serial.println(UUID);
         }
+        lcd.println(UUID);
       }
       break;
 
@@ -263,13 +307,29 @@ void loop() {
           case '3': delay(300); break;
           case '4': delay(400); break;
           case '5': delay(500); break;
+          case 'W': {
+              Serial.println(F("SETUP WIFI : 'W WifiName,password"));
+              if ( Serial.read() == ' ') {
+                String ssid = Serial.readStringUntil(',');
+                Serial.println(ssid);
+                ssid.trim();
+                if (ssid != "") {
+                  String pass = Serial.readStringUntil('\n');
+                  pass.replace("\r", "");
+                  pass.trim();
+                  Serial.println(pass);
+                  bool result = WiFi.begin(ssid, pass);
+                  Serial.print(F("WiFi begin "));
+                  D_println(result);
+                }
+              }
+            }
+            break;
         }
-
-
-        break;
-
       }
       break;
+
+
 
     case evInString:
       if (MyDebug.trackTime < 2) {
@@ -336,11 +396,11 @@ void beep(const uint16_t frequence, const uint16_t duree) {
   tone(BeepPin, frequence, duree);
 }
 
-//#define Hex2Char(X) (X + (X <= 9 ? '0' : ('A' - 10)))
-char Hex2Char( byte aByte) {
-  return aByte + (aByte <= 9 ? '0' : 'A' -  10);
-}
-//#define Char2Hex(X) (X  - (X <= '9' ? '0' : ('A' - 10)))
-byte Char2Hex(unsigned char aChar) {
-  return aChar  - (aChar <= '9' ? '0' : 'A' - 10);
-}
+////#define Hex2Char(X) (X + (X <= 9 ? '0' : ('A' - 10)))
+//char Hex2Char( byte aByte) {
+//  return aByte + (aByte <= 9 ? '0' : 'A' -  10);
+//}
+////#define Char2Hex(X) (X  - (X <= '9' ? '0' : ('A' - 10)))
+//byte Char2Hex(unsigned char aChar) {
+//  return aChar  - (aChar <= '9' ? '0' : 'A' - 10);
+//}
