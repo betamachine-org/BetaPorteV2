@@ -54,10 +54,11 @@
 // Liste des evenements specifique a ce projet
 enum tUserEventCode {
   // evenement utilisateurs
-  evBP0 = 100,
+  evBP0 = 100,      // low = low power allowed
   evLed0,
   evLowPower,
-  evLcdUpdate,  //update LCD
+  evBlinkClock,     // clignotement pendule
+  //evLcdRedraw,  //update LCD
   evCheckBadge,  //timer lecture etat badge
   evBadgeIn,            // Arrivee du badge
   evBadgeOut,           // Sortie du badge
@@ -104,16 +105,16 @@ int  multi = 0; // nombre de clic rapide
 // gestion de l'ecran
 
 bool  lcdOk = false;
-enum displayMode_t { dmInfo,  dmMAX };
-displayMode_t  displayMode = dmInfo;
-
-bool  displayRedraw = true;  // true si il faut reafficher entierement le lcd
+bool  lcdRedraw = false;
+char lcdTransmitSign = '!';
+//enum displayMode_t { dmInfo,  dmMAX };
+//displayMode_t  displayMode = dmInfo;
 
 // Variable d'application locale
 bool     badgePresent = false;
 bool     WiFiConnected = false;
-bool     lowPower = false;
-
+bool     lowPowerAllowed = false;
+bool     lowPowerActive = false;
 
 void setup() {
 
@@ -152,10 +153,10 @@ void setup() {
   lcd.println(F(APP_NAME));
 
   //   Reset PN532
-  pinMode(POWER_PN532, OUTPUT);
-  digitalWrite(POWER_PN532, LOW);   //Reset PN532
-  delay(500);
-  digitalWrite(POWER_PN532, HIGH);   //Reset PN532
+  //  pinMode(POWER_PN532, OUTPUT);
+  //  digitalWrite(POWER_PN532, LOW);   //Reset PN532
+  //  delay(500);
+  //  digitalWrite(POWER_PN532, HIGH);   //Reset PN532
 
 
 
@@ -173,9 +174,6 @@ void setup() {
 
   MyEvents.pushDelayEvent(1000, evCheckBadge); // arme la lecture du badge
 
-
-
-
   // a beep
   beep( 880, 500);
   delay(500);
@@ -184,8 +182,6 @@ void setup() {
   beep( 1047, 500);
 
 }
-
-byte BP0Multi = 0;   // multi click on BP0   should remove it
 
 
 void loop() {
@@ -201,8 +197,6 @@ void loop() {
     case ev24H:
       Serial.println("---- 24H ---");
       break;
-
-
 
 
     case ev10Hz: {
@@ -223,6 +217,53 @@ void loop() {
           WiFiConnected = (WiFiStatus == WL_CONNECTED);
           D_println(WiFiConnected);
         }
+
+        // check and updaate LCD
+        if (lcdOk) {
+          if (!checkI2C(LCD_I2CADR)) {
+            lcdOk = false;
+            Serial.println(F("LCD lost"));
+          } else {
+            static uint8_t lastMinute = minute();
+            if (lastMinute != minute()) {
+              lastMinute = minute();
+              lcdRedraw = true;
+            }
+            if ( lcdOk && lcdRedraw ) {
+              lcd.home();
+
+              if (year() < 2000) {
+                lcd.print F("? Date ?");
+              } else {
+                lcd.print(Digit2_str(day()));
+                lcd.print('/');
+                lcd.print(Digit2_str(month()));
+                lcd.print('/');
+                lcd.print(Digit2_str(year() % 100));
+              }
+
+              lcd.print(F("   "));
+              //lcdTransmitSign = ' ';
+              lcd.print(Digit2_str(hour()));
+              lcd.print(':');
+              lcd.print(Digit2_str(minute()));
+              MyEvents.pushDelayEvent(300, evBlinkClock, false);
+
+
+              lcdRedraw = false;
+            }
+          }
+        }
+
+      }
+      break;
+
+    case evBlinkClock: {
+        bool show = MyEvents.currentEvent.ext;
+        lcd.setCursor(13, 0);
+        lcd.print( show ? ':' : ' ');
+        show = !show;
+        MyEvents.pushDelayEvent(show ? 200 : 800, evBlinkClock, show);
       }
       break;
 
@@ -239,11 +280,20 @@ void loop() {
         }
       }
 
+      if (!lcdOk && checkI2C(LCD_I2CADR)) {
+        lcdOk = true;
+
+        Serial.print(F("LCD ok"));
+        lcd.clear();
+        lcdRedraw = true;
+      }
+
+
       break;
 
     // Detection changement d'etat badge
     case evCheckBadge: {
-        int rateCheckBadge = lowPower  ? 2000 : 250;
+        int rateCheckBadge = 300; //lowPower  ? 2000 : 250;
         MyEvents.pushDelayEvent(rateCheckBadge, evCheckBadge); // je reessaye plus tard
         // un badge est il present ?
         bool etatBadge = lecteurBadge.badgePresent();
@@ -261,10 +311,7 @@ void loop() {
         }
         badgePresent = etatBadge;
         D_println(badgePresent);
-        if (lowPower) {
-          MyEvents.pushDelayEvent(250, evCheckBadge); // je reessaye plus tard
-        }
-        jobWake();
+        jobActionDetected();
         MyEvents.pushEvent((badgePresent ? evBadgeIn : evBadgeOut)); // Signalement a l'application
       }
       break;
@@ -278,13 +325,10 @@ void loop() {
         //MyEvents.pushEvent(evShowLcd);
         lcd.clear();
         delay(500);
-        lcd.setCursor(0, 2);
-        lcd.println(F("Bonjour ..."));
         String UUID = lecteurBadge.getUUIDTag();
-        if (Serial) {
-          Serial.print(F("UID "));
-          Serial.println(UUID);
-        }
+        D_println(UUID);
+        lcd.setCursor(0, 0);
+        lcd.println(F("Bonjour ..."));
         lcd.println(UUID);
       }
       break;
@@ -297,14 +341,14 @@ void loop() {
     case evLowPower:
       if (MyEvents.currentEvent.ext) {
         Serial.println(F("Low Power On"));
-        lowPower = true;
+        lowPowerActive = true;
         lcd.setBacklight(0);
         //WiFi.disconnect();
         //WiFi.mode(WIFI_OFF);
         //WiFi.forceSleepBegin();  // this do  a WiFiMode OFF  !!! 21ma
       } else {
         Serial.println(F("Low Power Off"));
-        lowPower = false;
+        lowPowerActive = false;
         lcd.setBacklight(100);
         //WiFi.mode(WIFI_STA);
         //WiFi.disconnect();
@@ -316,14 +360,17 @@ void loop() {
     // BP0 = detecteur de presence
     case evBP0:
       switch (MyEvents.currentEvent.ext) {
-        // end of mouvement : Will go to low power in 5 minutes
-        //        case evxBPDown:
-        //          jobSleepLater();
-        //          break;
-        case evxBPUp:
-          jobWake();
+        case evxBPDown:
+          lowPowerAllowed = true;
           break;
+        case evxBPUp:
+          lowPowerAllowed = false;
+          break;
+        default:
+          return;
       }
+      jobActionDetected();
+      D_println(lowPowerAllowed);
       break;
 
     case evInChar: {
@@ -392,6 +439,8 @@ void loop() {
 
 // helpers
 
+
+
 // Check I2C
 bool checkI2C(const uint8_t i2cAddr)
 {
@@ -432,15 +481,25 @@ void beep(const uint16_t frequence, const uint16_t duree) {
   tone(BeepPin, frequence, duree);
 }
 
-void jobWake() {
-  if (lowPower) {
+void jobActionDetected() {
+  if (lowPowerActive) {
     Serial.println(F("Wake from low power"));
     MyEvents.pushEvent(evLowPower, false);
   }
-  Serial.println(F("low power in 5 minutes"));
-  MyEvents.pushDelayEvent(1 * 60 * 1000, evLowPower, true);
-
+  if (lowPowerAllowed) {
+    Serial.println(F("low power in 5 minutes"));
+    MyEvents.pushDelayEvent(1 * 60 * 1000, evLowPower, true);
+  }
 }
+
+//String Digit2_str(const uint16_t value) {
+//  String result = "";
+//  if (value < 10) result += '0';
+//  result += value;
+//  return result;
+//}
+//
+
 
 //void jobSleepLater() {
 //  //if (!lowPower) {
