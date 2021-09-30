@@ -215,6 +215,10 @@ void loop() {
           //    WL_CONNECTION_LOST  = 5,
           //    WL_DISCONNECTED     = 6
           WiFiConnected = (WiFiStatus == WL_CONNECTED);
+          if (WiFiConnected) {
+            setSyncProvider(getWebTime);
+            setSyncInterval(60 * 10);
+          }
           D_println(WiFiConnected);
         }
 
@@ -263,7 +267,7 @@ void loop() {
         lcd.setCursor(13, 0);
         lcd.print( show ? ':' : ' ');
         show = !show;
-        MyEvents.pushDelayEvent(show ? 200 : 800, evBlinkClock, show);
+        MyEvents.pushDelayEvent(show ? 250 : 750, evBlinkClock, show);
       }
       break;
 
