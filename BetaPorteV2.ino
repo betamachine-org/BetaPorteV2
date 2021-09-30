@@ -56,6 +56,7 @@ enum tUserEventCode {
   // evenement utilisateurs
   evBP0 = 100,
   evLed0,
+  evLowPower,
   evLcdUpdate,  //update LCD
   evCheckBadge,  //timer lecture etat badge
   evBadgeIn,            // Arrivee du badge
@@ -69,7 +70,7 @@ enum tUserEventCode {
 // instance betaEvent
 
 //  une instance "MyEvents" avec un poussoir "MyBP0" une LED "MyLed0" un clavier "MyKeyboard"
-//  MyBP0 genere un evenement evBP0 a chaque pression le poussoir connecté sur D2
+//  MyBP0 genere un evenement evBP0 a chaque pression le poussoir connecté sur pinBP0
 //  MyLed0 genere un evenement evLed0 a chaque clignotement de la led precablée sur la platine
 //  MyKeyboard genere un evenement evChar a char caractere recu et un evenement evString a chaque ligne recue
 //  MyDebug permet sur reception d'un "T" sur l'entrée Serial d'afficher les infos de charge du CPU
@@ -111,7 +112,7 @@ bool  displayRedraw = true;  // true si il faut reafficher entierement le lcd
 // Variable d'application locale
 bool     badgePresent = false;
 bool     WiFiConnected = false;
-
+bool     lowPower = false;
 
 
 void setup() {
@@ -146,15 +147,16 @@ void setup() {
   }
 
   // Init LCD
-  lcd.begin(20, 4); // initialize the lcd
+  lcd.begin(16, 2); // initialize the lcd
   lcd.setBacklight(100);
   lcd.println(F(APP_NAME));
 
-  //Reset PN532
-  //  digitalWrite(POWER_PN532, LOW);   //Reset PN532
-  //  delay(500);
-  //  digitalWrite(POWER_PN532, HIGH);   //Reset PN532
-  //  pinMode(POWER_PN532, INPUT);
+  //   Reset PN532
+  pinMode(POWER_PN532, OUTPUT);
+  digitalWrite(POWER_PN532, LOW);   //Reset PN532
+  delay(500);
+  digitalWrite(POWER_PN532, HIGH);   //Reset PN532
+
 
 
   // check PN532
@@ -205,7 +207,7 @@ void loop() {
 
     case ev10Hz: {
         // check for connection to local WiFi
-        static uint8_t oldWiFiStatus = 999;
+        static uint8_t oldWiFiStatus = 99;
         uint8_t  WiFiStatus = WiFi.status();
 
         if (oldWiFiStatus != WiFiStatus) {
@@ -241,7 +243,7 @@ void loop() {
 
     // Detection changement d'etat badge
     case evCheckBadge: {
-        int rateCheckBadge = badgePresent  ? 1000 : 250;
+        int rateCheckBadge = lowPower  ? 2000 : 250;
         MyEvents.pushDelayEvent(rateCheckBadge, evCheckBadge); // je reessaye plus tard
         // un badge est il present ?
         bool etatBadge = lecteurBadge.badgePresent();
@@ -259,14 +261,17 @@ void loop() {
         }
         badgePresent = etatBadge;
         D_println(badgePresent);
-        rateCheckBadge = badgePresent  ? 1000 : 250;
-        MyEvents.pushDelayEvent(rateCheckBadge, evCheckBadge); // je reessaye plus tard
+        if (lowPower) {
+          MyEvents.pushDelayEvent(250, evCheckBadge); // je reessaye plus tard
+        }
+        jobWake();
         MyEvents.pushEvent((badgePresent ? evBadgeIn : evBadgeOut)); // Signalement a l'application
       }
       break;
 
     // Arrivee d'un badge
     case evBadgeIn: {
+        beep( 1047, 200);
         MyEvents.pushDelayEvent(2 * 1000, evCheckBadge); // on laisse du temps a l'application pour lire et transmettre au moins une fois
         //leBadge = sBadge();
         // Affichage sur l'ecran
@@ -289,6 +294,37 @@ void loop() {
       helperReset();
       break;
 
+    case evLowPower:
+      if (MyEvents.currentEvent.ext) {
+        Serial.println(F("Low Power On"));
+        lowPower = true;
+        lcd.setBacklight(0);
+        //WiFi.disconnect();
+        //WiFi.mode(WIFI_OFF);
+        //WiFi.forceSleepBegin();  // this do  a WiFiMode OFF  !!! 21ma
+      } else {
+        Serial.println(F("Low Power Off"));
+        lowPower = false;
+        lcd.setBacklight(100);
+        //WiFi.mode(WIFI_STA);
+        //WiFi.disconnect();
+        //WiFi.reconnect();
+        //jobSleepLater();
+      }
+      break;
+
+    // BP0 = detecteur de presence
+    case evBP0:
+      switch (MyEvents.currentEvent.ext) {
+        // end of mouvement : Will go to low power in 5 minutes
+        //        case evxBPDown:
+        //          jobSleepLater();
+        //          break;
+        case evxBPUp:
+          jobWake();
+          break;
+      }
+      break;
 
     case evInChar: {
         if (MyDebug.trackTime < 2) {
@@ -371,7 +407,7 @@ void fatalError(const uint8_t error) {
   Serial.print(F("Fatal error "));
   Serial.println(error);
 
-  lcd.begin(20, 4); // reinitialize the lcd (needed at boot)
+  lcd.clear();
   lcd.setBacklight(100);
   lcd.print(F("Fatal error "));
   lcd.println(error);
@@ -395,6 +431,25 @@ void fatalError(const uint8_t error) {
 void beep(const uint16_t frequence, const uint16_t duree) {
   tone(BeepPin, frequence, duree);
 }
+
+void jobWake() {
+  if (lowPower) {
+    Serial.println(F("Wake from low power"));
+    MyEvents.pushEvent(evLowPower, false);
+  }
+  Serial.println(F("low power in 5 minutes"));
+  MyEvents.pushDelayEvent(1 * 60 * 1000, evLowPower, true);
+
+}
+
+//void jobSleepLater() {
+//  //if (!lowPower) {
+//    Serial.println(F("low power in 5 minutes"));
+//    MyEvents.pushDelayEvent(1 * 60 * 1000, evLowPower, true);
+//
+//  //}
+//}
+
 
 ////#define Hex2Char(X) (X + (X <= 9 ? '0' : ('A' - 10)))
 //char Hex2Char( byte aByte) {
