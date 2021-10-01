@@ -6,12 +6,12 @@
 
   This file is part of betaEvents.
 
-    betaEvents is free software: you can redistribute it and/or modify
+    BetaPorteV2 is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    betaEvents is distributed in the hope that it will be useful,
+    BetaPorteV2 is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
@@ -21,22 +21,19 @@
 
 
   History
-    V1.0 (21/11/2020)
-    - Full rebuild from PH_Event V1.3.1 (15/03/2020)
-       V1.1 (30/11/2020)
-    - Ajout du percentCPU pour une meilleur visualisation de l'usage CPU
+    V2.0 (30/10/2021)
+    - Full rebuild from BetaPorte V1.3 (15/03/2020)
+
+  // TODO : gerer le changement d'horaire
+  // TODO : gerer le changement NODE_NAME (nom de l'unitée)
 
 
-  e croquis utilise 267736 octets (25%) de l'espace de stockage de programmes. Le maximum est de 1044464 octets.
-  Les variables globales utilisent 27348 octets (33%) de mémoire dynamique, ce qui laisse 54572 octets pour les
-  e croquis utilise 267904 octets (25%) de l'espace de stockage de programmes. Le maximum est de 1044464 octets.
-  Les variables globales utilisent 27300 octets (33%) de mémoire dynamique, ce qui laisse 54620 octets pour les variables locales. Le maximum est de 81920 oct
- *************************************************/
+*************************************************/
 
 #include "ESP8266.h"
 
 #define APP_NAME "BetaPorte V2.0"
-#define NODE_NAME     "Node0"
+#define NODE_NAME     "Node0"   // name of the device
 
 //
 /* Evenements du Manager (voir EventsManager.h)
@@ -95,9 +92,10 @@ LiquidCrystal_PCF8574 lcd(LCD_I2CADR); // set the LCD address
 #define MAXRFIDSIZE 100
 BadgeNfc_PN532_I2C lecteurBadge;   // instance du lecteur de badge
 
-// just to shut off wifi on this basic version
+// 
 #include <ESP8266WiFi.h>
-
+#include <ESP8266HTTPClient.h>
+#include <Arduino_JSON.h>
 
 bool sleepOk = true;
 int  multi = 0; // nombre de clic rapide
@@ -115,6 +113,8 @@ bool     badgePresent = false;
 bool     WiFiConnected = false;
 bool     lowPowerAllowed = false;
 bool     lowPowerActive = false;
+time_t   currentTime;
+
 
 void setup() {
 
@@ -172,7 +172,6 @@ void setup() {
   lcd.print(F("\r" LCD_CLREOL ));
   Serial.println(F("NFC Module Ok."));
 
-  MyEvents.pushDelayEvent(1000, evCheckBadge); // arme la lecture du badge
 
   // a beep
   beep( 880, 500);
@@ -191,6 +190,8 @@ void loop() {
   {
     case evInit:
       Serial.println("Init");
+      MyEvents.pushDelayEvent(1000, evCheckBadge); // arme la lecture du badge
+
       break;
 
 
@@ -217,7 +218,7 @@ void loop() {
           WiFiConnected = (WiFiStatus == WL_CONNECTED);
           if (WiFiConnected) {
             setSyncProvider(getWebTime);
-            setSyncInterval(60 * 10);
+            setSyncInterval(60 * 59);
           }
           D_println(WiFiConnected);
         }
@@ -273,6 +274,7 @@ void loop() {
 
     case ev1Hz:
       // If we are not connected we warn the user every 30 seconds that we need to update credential
+      currentTime = now();
       if ( !WiFiConnected && second() % 30 ==  15) {
         // every 30 sec
         static uint16_t lastWarn = millis();
@@ -344,14 +346,14 @@ void loop() {
 
     case evLowPower:
       if (MyEvents.currentEvent.ext) {
-        Serial.println(F("Low Power On"));
+        //Serial.println(F("Low Power On"));
         lowPowerActive = true;
         lcd.setBacklight(0);
         //WiFi.disconnect();
         //WiFi.mode(WIFI_OFF);
         //WiFi.forceSleepBegin();  // this do  a WiFiMode OFF  !!! 21ma
       } else {
-        Serial.println(F("Low Power Off"));
+        //Serial.println(F("Low Power Off"));
         lowPowerActive = false;
         lcd.setBacklight(100);
         //WiFi.mode(WIFI_STA);
@@ -374,7 +376,7 @@ void loop() {
           return;
       }
       jobActionDetected();
-      D_println(lowPowerAllowed);
+      // D_println(lowPowerAllowed);
       break;
 
     case evInChar: {
@@ -412,6 +414,9 @@ void loop() {
               }
             }
             break;
+            case 'G': {
+              dialWithGoogle(NODE_NAME,"getBaseInfo");
+            }
         }
       }
       break;

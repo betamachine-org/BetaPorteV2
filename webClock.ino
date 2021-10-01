@@ -64,15 +64,9 @@ time_t getWebTime() {
   dateStruct.Month = monthName.indexOf(headerDate.substring(8, 11)) / 3 + 1;
   dateStruct.Day = headerDate.substring(5, 7).toInt();
 
-  //          Serial.print(dateStruct.tm_hour); Serial.print(":");
-  //          Serial.print(dateStruct.tm_min); Serial.print(":");
-  //          Serial.print(dateStruct.tm_sec); Serial.print(" ");
-  //          Serial.print(dateStruct.tm_mday); Serial.print("/");
-  //          Serial.print(dateStruct.tm_mon); Serial.print("/");
-  //          Serial.print(dateStruct.tm_year); Serial.println(" ");
-  //time_t serverTS = makeTime(dateStruct) + 1 * 3600; // winter time in france
   time_t serverTS = makeTime(dateStruct) + 2 * 3600; // summer time in france
-  D_println(serverTS);
+  int deltaTime = serverTS - currentTime;
+  D_println(deltaTime);
 
   // we dont use the payload here
   //String payload = http.getString();   //Get the request response payload
