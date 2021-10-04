@@ -1,5 +1,6 @@
 // acessing doGet function in a google sheet
 // https://script.google.com/macros/s/AKfycbycR7N4a3pIuYFCfjR3Ys_wp7yAUb2-M6okvlhYkhzTHD6cOGaKUMcyG9MAiwltS400RQ/exec?node=test&action=getBaseInfo
+// AKfycbycR7N4a3pIuYFCfjR3Ys_wp7yAUb2-M6okvlhYkhzTHD6cOGaKUMcyG9MAiwltS400RQ
 
 #define SHEET_SERVER  "script.google.com"
 #define SHEET_UID     "AKfycbycR7N4a3pIuYFCfjR3Ys_wp7yAUb2-M6okvlhYkhzTHD6cOGaKUMcyG9MAiwltS400RQ"
@@ -10,7 +11,7 @@
 
 
 
-bool dialWithGoogle(const String aNode, const String aAction) {
+bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonData) {
 
   Serial.print("Dial With Google ");
   Serial.print(aNode);
@@ -39,31 +40,20 @@ bool dialWithGoogle(const String aNode, const String aAction) {
   http.collectHeaders(headerKeys, numberOfHeaders);
 
   int httpCode = http.GET();//Send the request
-  //D_println(httpCode);
-  if (httpCode < 0 ) {
+  int antiLoop = 0;
+  while (httpCode == 302 && antiLoop++ < 3) {
+    String newLocation = http.header(headerKeys[1]);
+    // google will give answer in relocation
+    D_println(newLocation);
+    http.begin(client, newLocation); //Specify request new destination
+    http.collectHeaders(headerKeys, numberOfHeaders);
+    httpCode = http.GET();//Send the request
+  }
+  if (httpCode < 0) {
     Serial.print(F("cant get an answer :( http.GET()="));
     Serial.println(httpCode);
     http.end();   //Close connection
     return (false);
-  }
-  int antiLoop = 0;
-  while (httpCode == 302 && antiLoop++ < 5) {
-    String newLocation = http.header(headerKeys[1]);
-    // google will give answer in relocation
-    //    Serial.print(F("connect to "));
-    //    Serial.print(newLocation);
-    //    Serial.println(F(" to get answer"));
-    http.begin(client, newLocation); //Specify request new destination
-    http.collectHeaders(headerKeys, numberOfHeaders);
-    httpCode = http.GET();//Send the request
-    //D_println(httpCode);
-
-    if (httpCode < 0) {
-      Serial.print(F("cant get an answer :( http.GET()="));
-      Serial.println(httpCode);
-      http.end();   //Close connection
-      return (false);
-    }
   }
 
   if (httpCode != 200) {
@@ -72,17 +62,6 @@ bool dialWithGoogle(const String aNode, const String aAction) {
     http.end();   //Close connection
     return (false);
   }
-
-  //  // we got an answer the date is in the header so we grab it
-  //  String headerDate = http.header(headerKeys[0]);
-  //  // Check the header should be a 29 char texte like this 'Mon, 24 May 2021 13:57:04 GMT'
-  //  D_println(headerDate);
-  //  if (!headerDate.endsWith(" GMT") || headerDate.length() != 29) {
-  //    Serial.println(F("reponse invalide :("));
-  //    http.end();   //Close connection
-  //    return;
-  //  }
-
 
   String payload = http.getString();   //Get the request response payload
   http.end();   //Close connection
@@ -96,11 +75,12 @@ bool dialWithGoogle(const String aNode, const String aAction) {
     Serial.println( JSON.typeof(myObject["status"]) );
     Serial.print("myObject[\"status\"] = ");
     Serial.println( myObject["status"]);
+    
   }
   D_println( JSON.typeof(myObject["answer"]) );
   D_println( myObject["answer"]);
-
-
+  D_println( niceDisplayTime(myObject["timestamp"]) );
+  jsonData = myObject["answer"];
   bool result = payload.startsWith(F("{\"status\":true,"));
   return (true);
 

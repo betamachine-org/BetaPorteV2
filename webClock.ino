@@ -67,6 +67,7 @@ time_t getWebTime() {
   time_t serverTS = makeTime(dateStruct) + 2 * 3600; // summer time in france
   int deltaTime = serverTS - currentTime;
   D_println(deltaTime);
+  D_println(niceDisplayTime(currentTime));
 
   // we dont use the payload here
   //String payload = http.getString();   //Get the request response payload

@@ -48,7 +48,11 @@
 */
 
 #define Hex2Char(X) (char)((X) + ((X) <= 9 ? '0' : ('A' - 10)))
+#define NOT_A_DATE_YEAR   2000
+
 // Liste des evenements specifique a ce projet
+
+
 enum tUserEventCode {
   // evenement utilisateurs
   evBP0 = 100,      // low = low power allowed
@@ -92,7 +96,7 @@ LiquidCrystal_PCF8574 lcd(LCD_I2CADR); // set the LCD address
 #define MAXRFIDSIZE 100
 BadgeNfc_PN532_I2C lecteurBadge;   // instance du lecteur de badge
 
-// 
+//
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <Arduino_JSON.h>
@@ -414,8 +418,12 @@ void loop() {
               }
             }
             break;
-            case 'G': {
-              dialWithGoogle(NODE_NAME,"getBaseInfo");
+          case 'G': {
+              JSONVar jsonData;
+              dialWithGoogle(NODE_NAME, "getBaseInfo", jsonData);
+              D_println( JSON.typeof(jsonData) );
+              D_println( jsonData);
+
             }
         }
       }
@@ -501,29 +509,35 @@ void jobActionDetected() {
   }
 }
 
-//String Digit2_str(const uint16_t value) {
-//  String result = "";
-//  if (value < 10) result += '0';
-//  result += value;
-//  return result;
-//}
-//
+String niceDisplayTime(time_t time) {
 
+  String txt;
+  // we supose that time < NOT_A_DATE_YEAR is not a date
+  if ( year(time) < NOT_A_DATE_YEAR ) {
+    txt = "          ";
+    txt += time / (24 * 3600);
+    txt += ' ';
+    txt = txt.substring(txt.length() - 10);
+  } else {
 
-//void jobSleepLater() {
-//  //if (!lowPower) {
-//    Serial.println(F("low power in 5 minutes"));
-//    MyEvents.pushDelayEvent(1 * 60 * 1000, evLowPower, true);
-//
-//  //}
-//}
+    txt = Digit2_str(day(time));
+    txt += '/';
+    txt += Digit2_str(month(time));
+    txt += '/';
+    txt += year(time);
+  }
 
-
-////#define Hex2Char(X) (X + (X <= 9 ? '0' : ('A' - 10)))
-//char Hex2Char( byte aByte) {
-//  return aByte + (aByte <= 9 ? '0' : 'A' -  10);
-//}
-////#define Char2Hex(X) (X  - (X <= '9' ? '0' : ('A' - 10)))
-//byte Char2Hex(unsigned char aChar) {
-//  return aChar  - (aChar <= '9' ? '0' : 'A' - 10);
-//}
+  static String date;
+  if (txt == date) {
+    txt = "";
+  } else {
+    date = txt;
+    txt += " ";
+  }
+  txt += Digit2_str(hour(time));
+  txt += ':';
+  txt += Digit2_str(minute(time));
+  txt += ':';
+  txt += Digit2_str(second(time));
+  return txt;
+}
