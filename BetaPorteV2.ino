@@ -118,7 +118,7 @@ bool     WiFiConnected = false;
 bool     lowPowerAllowed = false;
 bool     lowPowerActive = false;
 time_t   currentTime;
-
+int8_t  timeZone = -2;
 
 void setup() {
 
@@ -222,7 +222,7 @@ void loop() {
           WiFiConnected = (WiFiStatus == WL_CONNECTED);
           if (WiFiConnected) {
             setSyncProvider(getWebTime);
-            setSyncInterval(60 * 59);
+            setSyncInterval(6 * 3600);
           }
           D_println(WiFiConnected);
         }
@@ -421,9 +421,11 @@ void loop() {
           case 'G': {
               JSONVar jsonData;
               dialWithGoogle(NODE_NAME, "getBaseInfo", jsonData);
-              D_println( JSON.typeof(jsonData) );
-              D_println( jsonData);
-
+              D_println( JSON.typeof(jsonData["answer"]) );
+              D_println( jsonData["answer"][0][0]);
+              D_println( JSON.typeof(jsonData["answer"][0][1]));
+              D_println( jsonData["answer"][0][1]);
+              D_println( niceDisplayTime(jsonData["answer"][0][1]));
             }
         }
       }

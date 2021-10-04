@@ -64,11 +64,11 @@ time_t getWebTime() {
   dateStruct.Month = monthName.indexOf(headerDate.substring(8, 11)) / 3 + 1;
   dateStruct.Day = headerDate.substring(5, 7).toInt();
 
-  time_t serverTS = makeTime(dateStruct) + 2 * 3600; // summer time in france
+  time_t serverTS = makeTime(dateStruct) - (timeZone * 3600); // change to local time
+  D_println(timeZone);
   int deltaTime = serverTS - currentTime;
   D_println(deltaTime);
-  D_println(niceDisplayTime(currentTime));
-
+  D_println(niceDisplayTime(serverTS));
   // we dont use the payload here
   //String payload = http.getString();   //Get the request response payload
   //Serial.println(payload);             //Print the response payload

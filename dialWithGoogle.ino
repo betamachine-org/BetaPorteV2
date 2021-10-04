@@ -66,21 +66,21 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonData)
   String payload = http.getString();   //Get the request response payload
   http.end();   //Close connection
   Serial.println(payload);             //Print the response payload
-  JSONVar myObject = JSON.parse(payload);
-  Serial.print("JSON.typeof(myObject) = ");
-  Serial.println(JSON.typeof(myObject)); // prints: object
-  if (myObject.hasOwnProperty("status")) {
+  jsonData = JSON.parse(payload);
+  Serial.print("JSON.typeof(jsonData) = ");
+  Serial.println(JSON.typeof(jsonData)); // prints: object
+  if (jsonData.hasOwnProperty("status")) {
 
-    Serial.print("JSON.typeof(myObject[\"status\"]) = ");
-    Serial.println( JSON.typeof(myObject["status"]) );
-    Serial.print("myObject[\"status\"] = ");
-    Serial.println( myObject["status"]);
+    Serial.print("JSON.typeof(jsonData[\"status\"]) = ");
+    Serial.println( JSON.typeof(jsonData["status"]) );
+    Serial.print("jsonData[\"status\"] = ");
+    Serial.println( jsonData["status"]);
     
   }
-  D_println( JSON.typeof(myObject["answer"]) );
-  D_println( myObject["answer"]);
-  D_println( niceDisplayTime(myObject["timestamp"]) );
-  jsonData = myObject["answer"];
+  D_println( JSON.typeof(jsonData["answer"]) );
+  D_println( jsonData["answer"]);
+  D_println( niceDisplayTime(jsonData["timestamp"]) );
+  jsonData = jsonData["answer"];
   bool result = payload.startsWith(F("{\"status\":true,"));
   return (true);
 
