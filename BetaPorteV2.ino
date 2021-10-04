@@ -421,11 +421,12 @@ void loop() {
           case 'G': {
               JSONVar jsonData;
               dialWithGoogle(NODE_NAME, "getBaseInfo", jsonData);
-              D_println( JSON.typeof(jsonData["answer"]) );
-              D_println( jsonData["answer"][0][0]);
-              D_println( JSON.typeof(jsonData["answer"][0][1]));
-              D_println( jsonData["answer"][0][1]);
-              D_println( niceDisplayTime(jsonData["answer"][0][1]));
+              D_println( JSON.typeof(jsonData) );
+              D_println( jsonData[0][0]);
+              D_println( JSON.typeof(jsonData[0][1]));
+              D_println( jsonData[0][1]);
+              D_println( niceDisplayTime(jsonData[0][1]));
+
             }
         }
       }
