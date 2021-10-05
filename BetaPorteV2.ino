@@ -26,7 +26,7 @@
 
   // TODO : gerer le changement d'horaire
   // TODO : gerer le changement NODE_NAME (nom de l'unitée)
-
+  !! todo pushevent timezone changed
 
 *************************************************/
 
@@ -186,6 +186,7 @@ void setup() {
 
 }
 
+String niceDisplayTime(const time_t time, bool full = false);
 
 void loop() {
   MyEvents.getEvent(sleepOk);
@@ -418,16 +419,6 @@ void loop() {
               }
             }
             break;
-          case 'G': {
-              JSONVar jsonData;
-              dialWithGoogle(NODE_NAME, "getBaseInfo", jsonData);
-              D_println( JSON.typeof(jsonData) );
-              D_println( jsonData[0][0]);
-              D_println( JSON.typeof(jsonData[0][1]));
-              D_println( jsonData[0][1]);
-              D_println( niceDisplayTime(jsonData[0][1]));
-
-            }
         }
       }
       break;
@@ -438,13 +429,32 @@ void loop() {
       if (MyDebug.trackTime < 2) {
         D_println(MyKeyboard.inputString);
       }
-      if (MyKeyboard.inputString.equals("RESET")) {
+      if (MyKeyboard.inputString.equals(F("RESET"))) {
         Serial.println(F("RESET"));
         MyEvents.pushEvent(doReset);
       }
       if (MyKeyboard.inputString.equals("S")) {
         sleepOk = !sleepOk;
         D_println(sleepOk);
+      }
+      if (MyKeyboard.inputString.equals(F("G0"))) {
+        JSONVar jsonData;
+        if (!dialWithGoogle(NODE_NAME, "check", jsonData)) {
+          Serial.println(F("Erreur G0"));
+        } else {
+          Serial.println(F("G0 Ok"));
+        }
+      }
+      if (MyKeyboard.inputString.equals(F("G1"))) {
+        JSONVar jsonData;
+        if (!dialWithGoogle(NODE_NAME, "getBaseInfo", jsonData)) {
+          Serial.println("Erreur G0");
+        } else {
+          Serial.print(F("Base version "));
+          Serial.print(jsonData[0][0]);
+          Serial.print(F(" du "));
+          Serial.println(niceDisplayTime(jsonData[0][1], true ));
+        }
       }
 
 
@@ -512,7 +522,7 @@ void jobActionDetected() {
   }
 }
 
-String niceDisplayTime(time_t time) {
+String niceDisplayTime(const time_t time, bool full) {
 
   String txt;
   // we supose that time < NOT_A_DATE_YEAR is not a date
@@ -531,7 +541,7 @@ String niceDisplayTime(time_t time) {
   }
 
   static String date;
-  if (txt == date) {
+  if (!full && txt == date) {
     txt = "";
   } else {
     date = txt;

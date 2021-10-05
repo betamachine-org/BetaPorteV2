@@ -69,13 +69,22 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonData)
     D_println(payload);             //Print the response payload
     jsonData = JSON.parse(payload);
   } // free payload (can be hudge in memory)
-  
+
   if (JSON.typeof(jsonData) != F("object")) return (false);
 
   // super check json data for "status" is a bool true  to avoid foolish data then supose all json data are ok.
-  if (!jsonData.hasOwnProperty("status") || JSON.typeof(jsonData["status"]) != F("boolean") || !jsonData["status"]) return (false);
-
-  D_println( niceDisplayTime(jsonData["timestamp"]) );
+  if (!jsonData.hasOwnProperty("status") || JSON.typeof(jsonData["status"]) != F("boolean") || !jsonData["status"]) {
+    return (false);
+  }
+  
+  if (JSON.typeof(jsonData["timezone"]) == F("number") ) {
+    timeZone = (int)jsonData["timezone"];
+    //!! todo pushevent timezone changed
+  }
+  if (JSON.typeof(jsonData["baseinfo"]) == F("number") ) {
+    D_println(jsonData["baseinfo"]);
+  }
+    D_println( niceDisplayTime(jsonData["timestamp"]) );
   JSONVar answer = jsonData["answer"];  // cant grab object from the same object
   jsonData = answer;                    // so memory use is temporary duplicated here
   return (true);
