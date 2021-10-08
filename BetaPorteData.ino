@@ -31,7 +31,7 @@
 // si la baseIndex n'est pas a jour on lance un evReadGsheet
 
 bool jobCheckGSheet()    {
-  Serial.println(F("evCheckGSheet"));
+  Serial.println(F("jobCheckGSheet"));
   if (!WiFiConnected) return false;
 
   JSONVar jsonData;
@@ -48,8 +48,19 @@ bool jobCheckGSheet()    {
   return true;
 }
 
+// mark la base comme lu sur la version actuelle
+bool jobMarkIndexReadGSheet()    {
+  Serial.println(F("jobMarkIndexReadGSheet"));
+  if (!WiFiConnected) return false;
 
-
+  JSONVar jsonData;
+  if (!dialWithGoogle(NODE_NAME, "mark", jsonData)) {
+    Serial.println(F("Erreur acces GSheet"));
+    MyEvents.pushDelayEvent(1 * 3600 * 1000, evCheckGSheet); // recheck in 1 hours
+    return false;
+  }
+  return true;
+}
 
 
 // lecture des badges puis ecriture sur la flash fichier badges.json

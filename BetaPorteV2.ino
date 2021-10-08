@@ -347,6 +347,8 @@ void loop() {
     case evBadgeIn: {
         beep( 1047, 200);
         MyEvents.pushDelayEvent(2 * 1000, evCheckBadge); // on laisse du temps a l'application pour lire et transmettre au moins une fois
+        MyEvents.pushDelayEvent(5 * 60 * 1000, evCheckGSheet); // on controle la base
+ 
         //leBadge = sBadge();
         // Affichage sur l'ecran
         //MyEvents.pushEvent(evShowLcd);
@@ -361,8 +363,10 @@ void loop() {
           lcd.println(F("Bonjour ..."));
           lcd.println(userPseudo);
           //delay(200);
-          beep( 444, 400);
+          
         } else {
+          delay(200);
+          beep( 444, 400);
           lcd.setCursor(0, 0);
           lcd.println(F("Bonjour ..."));
           lcd.println("Badge inconnu");
@@ -371,6 +375,7 @@ void loop() {
           txt += UUID;
           jsonData["info"] = txt;
           dialWithGoogle(NODE_NAME, "writeInfo", jsonData);
+ 
         }
 
       }
@@ -384,7 +389,8 @@ void loop() {
     // relecture de la Gsheet : liste des badge et plage horaire
     case evReadGSheet: {
         Serial.println(F("evReadGSheet"));
-        if ( jobReadBadgesGSheeet() ) {
+        // marque la version comme lue au moins un fois
+        if ( jobMarkIndexReadGSheet() && jobReadBadgesGSheeet() ) {
           localBaseIndex = gsheetBaseIndex;  // mise a jour de l'index base local
           D_println(localBaseIndex);
         } else {
