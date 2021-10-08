@@ -21,11 +21,22 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonData)
   Serial.println(aAction);
   String aUri = F(SHEET_URI);
   aUri += F("?node=");
-  aUri += aNode;
-  aUri += F("&action=");
-  aUri += aAction;
+  D_println(aNode);
+  String txt = encodeUri(aNode);
+  D_println(txt);
+  aUri += txt;
 
-  //D_println(aUri);
+  aUri += F("&action=");
+  txt = encodeUri(aAction);
+  aUri += txt;
+
+  D_println(JSON.typeof(jsonData));
+  if (JSON.typeof(jsonData) == F("object") ) {
+    aUri += F("&json=");
+    txt = encodeUri(JSON.stringify(jsonData));
+    aUri += txt;
+  }
+  D_println(aUri);
 
   WiFiClientSecure client;
   HTTPClient http;  //Declare an object of class HTTPClient
@@ -76,7 +87,7 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonData)
   if (!jsonData.hasOwnProperty("status") || JSON.typeof(jsonData["status"]) != F("boolean") || !jsonData["status"]) {
     return (false);
   }
-  
+
   if (JSON.typeof(jsonData["timezone"]) == F("number") ) {
     timeZone = (int)jsonData["timezone"];
     //!! todo pushevent timezone changed
@@ -84,11 +95,34 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonData)
   if (JSON.typeof(jsonData["baseinfo"]) == F("number") ) {
     D_println(jsonData["baseinfo"]);
   }
-    D_println( niceDisplayTime(jsonData["timestamp"]) );
+  D_println( niceDisplayTime(jsonData["timestamp"]) );
   JSONVar answer = jsonData["answer"];  // cant grab object from the same object
   jsonData = answer;                    // so memory use is temporary duplicated here
   return (true);
 
 
 
+}
+
+
+String encodeUri(const String aUri) {
+  String answer = "";
+  String specialChar = F(".-~_{}[],;:\"\\");
+  // uri encode maison :)
+  for (int N = 0; N < aUri.length(); N++) {
+    char aChar = aUri[N];
+    //TODO:  should I keep " " to "+" conversion ????  save 2 char but oldy
+    if (aChar == ' ') {
+      answer += '+';
+    } else if ( isAlphaNumeric(aChar) ) {
+      answer +=  aChar;
+    } else if (specialChar.indexOf(aChar) >= 0) {
+      answer +=  aChar;
+    } else {
+      answer +=  '%';
+      answer += Hex2Char( aChar >> 4 );
+      answer += Hex2Char( aChar & 0xF);
+    } // if alpha
+  }
+  return(answer);
 }

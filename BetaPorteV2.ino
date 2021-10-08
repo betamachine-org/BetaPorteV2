@@ -341,6 +341,13 @@ void loop() {
         lcd.setCursor(0, 0);
         lcd.println(F("Bonjour ..."));
         lcd.println(UUID);
+        JSONVar jsonData;
+        String txt = F("Badge invalide ");
+        txt += UUID;
+        jsonData["info"] = txt;
+        dialWithGoogle(NODE_NAME, "writeInfo", jsonData);
+
+
       }
       break;
 
@@ -457,6 +464,15 @@ void loop() {
         }
       }
 
+      if (MyKeyboard.inputString.equals(F("G3"))) {
+        JSONVar jsonData;
+        jsonData["info"] = "testG3 & test é & ! # ' + \" , . ; € ";
+        if (!dialWithGoogle(NODE_NAME, "writeInfo", jsonData)) {
+          Serial.println("Erreur writeInfo");
+        } else {
+          Serial.println(F("writeInfo Ok"));
+        }
+      }
 
 
 
