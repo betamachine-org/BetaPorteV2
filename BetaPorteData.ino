@@ -78,14 +78,14 @@ bool jobReadBadgesGSheeet() {
     D_println(aLine);
     aFile.println(aLine);
 
-//    Serial.print(jsonData[N][0]);
-//    Serial.print(" ");
-//    Serial.print(jsonData[N][1]);
-//    Serial.print(" ");
-//    Serial.print(niceDisplayTime(jsonData[N][2], true));
-//    Serial.print("-");
-//    Serial.print(niceDisplayTime(jsonData[N][3], true));
-//    Serial.println(" ");
+    //    Serial.print(jsonData[N][0]);
+    //    Serial.print(" ");
+    //    Serial.print(jsonData[N][1]);
+    //    Serial.print(" ");
+    //    Serial.print(niceDisplayTime(jsonData[N][2], true));
+    //    Serial.print("-");
+    //    Serial.print(niceDisplayTime(jsonData[N][3], true));
+    //    Serial.println(" ");
   }
   aFile.close();
   aFile = MyLittleFS.open(F("/badges.json"), "r");
@@ -94,7 +94,77 @@ bool jobReadBadgesGSheeet() {
     return (false);
   }
   String aString = aFile.readStringUntil('\n');
-  D_println(aString);
+  D_println(aString);  //aString => '{"baseindex":19,"timestamp":1633712861,"badgenumber":5}
+
   aFile.close();
   return (true);
+}
+
+// lecture de la version de la base sur la flash fichier badges.json
+bool jobGetBaseIndex() {
+  File aFile = MyLittleFS.open(F("/badges.json"), "r");
+  if (!aFile) return (false);
+
+  String aString = aFile.readStringUntil('\n');
+  aFile.close();
+  D_println(aString);  //aString => '{"baseindex":19,"timestamp":1633712861,"badgenumber":5}
+
+  JSONVar jsonHeader = JSON.parse(aString);
+  if (JSON.typeof(jsonHeader) != F("object")) return (false);
+
+  // super check json data for "status" is a bool true  to avoid foolish data then supose all json data are ok.
+  if (!jsonHeader.hasOwnProperty("baseindex") || JSON.typeof(jsonHeader["baseindex"]) != F("number") ) {
+    return (false);
+  }
+  localBaseIndex = (int)jsonHeader["baseindex"];
+  gsheetBaseIndex = localBaseIndex;
+  D_println(localBaseIndex);
+
+
+
+  return (true);
+
+}
+
+
+
+// verification de la validité d'un badge dans la base sur la flash fichier badges.json
+bool jobCheckBadge(const String aUUID) {
+  File aFile = MyLittleFS.open(F("/badges.json"), "r");
+  if (!aFile) return (false);
+  String aString = aFile.readStringUntil('\n');
+
+  //D_println(aString);  //aString => '{"baseindex":19,"timestamp":1633712861,"badgenumber":5}
+
+  JSONVar jsonHeader = JSON.parse(aString);
+  if (JSON.typeof(jsonHeader) != F("object")) return (false);
+
+  if (!jsonHeader.hasOwnProperty("badgenumber") || JSON.typeof(jsonHeader["badgenumber"]) != F("number") ) {
+    return (false);
+  }
+  int badgeNumber = jsonHeader["badgenumber"];
+  D_println(badgeNumber);
+  int N = 0;
+  while (N < badgeNumber ) {
+    aString = aFile.readStringUntil('\n');
+    JSONVar jsonLine = JSON.parse(aString);
+    if (JSON.typeof(jsonLine) != F("array")) break;
+    if ( jsonLine[0] == aUUID) {
+      Serial.print("Match ");
+      D_println(jsonLine[1]);
+      userPseudo = jsonLine[1];
+      aFile.close();
+      return (true);
+
+    }
+
+
+    N++;
+  }
+
+
+
+  aFile.close();
+  return (false);
+
 }

@@ -127,6 +127,7 @@ time_t   currentTime;
 int8_t   timeZone = -2;  //les heures sont toutes en localtimes
 uint16_t localBaseIndex = 0;    //version de la derniere GSheet en flash
 uint16_t gsheetBaseIndex = 0;   //version de la gsheet actuelle
+String userPseudo = "";
 
 void setup() {
 
@@ -208,6 +209,7 @@ void loop() {
   {
     case evInit:
       Serial.println("Init");
+      jobGetBaseIndex();
       MyEvents.pushDelayEvent(1000, evCheckBadge); // arme la lecture du badge
 
       break;
@@ -349,18 +351,27 @@ void loop() {
         // Affichage sur l'ecran
         //MyEvents.pushEvent(evShowLcd);
         lcd.clear();
-        delay(500);
+        //delay(500);
         String UUID = lecteurBadge.getUUIDTag();
         D_println(UUID);
-        lcd.setCursor(0, 0);
-        lcd.println(F("Bonjour ..."));
-        lcd.println(UUID);
-        JSONVar jsonData;
-        String txt = F("Badge invalide ");
-        txt += UUID;
-        jsonData["info"] = txt;
-        dialWithGoogle(NODE_NAME, "writeInfo", jsonData);
-
+        if (jobCheckBadge(UUID)) {
+          Serial.print("Badge Ok ");
+          D_println(userPseudo);
+          lcd.setCursor(0, 0);
+          lcd.println(F("Bonjour ..."));
+          lcd.println(userPseudo);
+          //delay(200);
+          beep( 444, 400);
+        } else {
+          lcd.setCursor(0, 0);
+          lcd.println(F("Bonjour ..."));
+          lcd.println("Badge inconnu");
+          JSONVar jsonData;
+          String txt = F("Badge invalide ");
+          txt += UUID;
+          jsonData["info"] = txt;
+          dialWithGoogle(NODE_NAME, "writeInfo", jsonData);
+        }
 
       }
       break;

@@ -53,7 +53,7 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonData)
   while (httpCode == 302 && antiLoop++ < 3) {
     String newLocation = http.header(headerKeys[0]);
     // google will give answer in relocation
-    D_println(newLocation);
+    //D_println(newLocation);
     http.begin(client, newLocation); //Specify request new destination
     http.collectHeaders(headerKeys, numberOfHeaders);
     httpCode = http.GET();//Send the request
