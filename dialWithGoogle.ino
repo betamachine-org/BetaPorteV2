@@ -15,28 +15,25 @@
 
 bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonData) {
 
-  Serial.print(F("Dial With Google "));
+  Serial.print(F("Dial With gSheet as "));
   Serial.print(aNode);
   Serial.print(':');
   Serial.println(aAction);
   String aUri = F(SHEET_URI);
+
   aUri += F("?node=");
-  D_println(aNode);
-  String txt = encodeUri(aNode);
-  D_println(txt);
-  aUri += txt;
+  aUri += encodeUri(aNode);;
 
   aUri += F("&action=");
-  txt = encodeUri(aAction);
-  aUri += txt;
+  aUri += encodeUri(aAction);;
 
-  D_println(JSON.typeof(jsonData));
+  //  D_println(JSON.typeof(jsonData));
+  // les parametres eventuels sont passées en JSON dans le parametre '&json='
   if (JSON.typeof(jsonData) == F("object") ) {
     aUri += F("&json=");
-    txt = encodeUri(JSON.stringify(jsonData));
-    aUri += txt;
+    aUri += encodeUri(JSON.stringify(jsonData));
   }
-  D_println(aUri);
+  //  D_println(aUri);
 
   WiFiClientSecure client;
   HTTPClient http;  //Declare an object of class HTTPClient
@@ -88,14 +85,21 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonData)
     return (false);
   }
 
+  // localzone de la sheet pour l'ajustement heure hiver ete
   if (JSON.typeof(jsonData["timezone"]) == F("number") ) {
     timeZone = (int)jsonData["timezone"];
     //!! todo pushevent timezone changed
   }
-  if (JSON.typeof(jsonData["baseinfo"]) == F("number") ) {
-    D_println(jsonData["baseinfo"]);
+  // version des donnée de la feuille pour mettre a jour les données
+  if (JSON.typeof(jsonData["baseindex"]) == F("number") ) {
+    uint16_t baseIndex = (int)jsonData["baseindex"];
+    if ( localBaseIndex != baseIndex ) {
+      gsheetBaseIndex = baseIndex;
+      D_println(gsheetBaseIndex);
+    }
+    D_println(jsonData["baseindex"]);
   }
-  D_println( niceDisplayTime(jsonData["timestamp"]) );
+//  D_println( niceDisplayTime(jsonData["timestamp"]) );
   JSONVar answer = jsonData["answer"];  // cant grab object from the same object
   jsonData = answer;                    // so memory use is temporary duplicated here
   return (true);
@@ -124,5 +128,5 @@ String encodeUri(const String aUri) {
       answer += Hex2Char( aChar & 0xF);
     } // if alpha
   }
-  return(answer);
+  return (answer);
 }

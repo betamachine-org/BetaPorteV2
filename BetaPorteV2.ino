@@ -2,9 +2,9 @@
  *************************************************
     Sketch BetaPorteV2.ino   Gestion d'un four de poterie
 
-    Copyright 20201 Pierre HENRY net23@frdev.com All - right reserved.
+    Copyright 20201 Pierre HENRY net23@frdev.com
 
-  This file is part of betaEvents.
+  This file is part of BetaPorteV2.
 
     BetaPorteV2 is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -63,6 +63,8 @@ enum tUserEventCode {
   evCheckBadge,  //timer lecture etat badge
   evBadgeIn,            // Arrivee du badge
   evBadgeOut,           // Sortie du badge
+  evCheckGSheet,        // simple check de la base normalement toute les 6 heures (5 minutes apres un acces)
+  evReadGSheet,         // demande de lecture de la gsheet (mmise a jour liste des badges)
   // evenement action
   doReset,
 };
@@ -96,7 +98,11 @@ LiquidCrystal_PCF8574 lcd(LCD_I2CADR); // set the LCD address
 #define MAXRFIDSIZE 100
 BadgeNfc_PN532_I2C lecteurBadge;   // instance du lecteur de badge
 
-//
+// littleFS
+#include <LittleFS.h>  //Include File System Headers 
+#define MyLittleFS  LittleFS
+
+//WiFI
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <Arduino_JSON.h>
@@ -118,7 +124,9 @@ bool     WiFiConnected = false;
 bool     lowPowerAllowed = false;
 bool     lowPowerActive = false;
 time_t   currentTime;
-int8_t  timeZone = -2;
+int8_t   timeZone = -2;  //les heures sont toutes en localtimes
+uint16_t localBaseIndex = 0;    //version de la derniere GSheet en flash
+uint16_t gsheetBaseIndex = 0;   //version de la gsheet actuelle
 
 void setup() {
 
@@ -177,6 +185,11 @@ void setup() {
   Serial.println(F("NFC Module Ok."));
 
 
+  if (!MyLittleFS.begin()) {
+    Serial.println(F("TW: FS en erreur  !!!!!"));
+  }
+
+
   // a beep
   beep( 880, 500);
   delay(500);
@@ -224,6 +237,7 @@ void loop() {
           if (WiFiConnected) {
             setSyncProvider(getWebTime);
             setSyncInterval(6 * 3600);
+            MyEvents.pushDelayEvent(10 * 1000, evCheckGSheet);
           }
           D_println(WiFiConnected);
         }
@@ -348,6 +362,24 @@ void loop() {
         dialWithGoogle(NODE_NAME, "writeInfo", jsonData);
 
 
+      }
+      break;
+
+    // controle de la version de la Gsheet
+    case evCheckGSheet:
+      jobCheckGSheet();
+      break;
+
+    // relecture de la Gsheet : liste des badge et plage horaire
+    case evReadGSheet: {
+        Serial.println(F("evReadGSheet"));
+        if ( jobReadBadgesGSheeet() ) {
+          localBaseIndex = gsheetBaseIndex;  // mise a jour de l'index base local
+          D_println(localBaseIndex);
+        } else {
+          Serial.println("Erreur lecture Gsheet Badge");
+        }
+        //MyEvents.removeDelayEvent(evCheckGSheet); // recheck in 6 hours
       }
       break;
 
