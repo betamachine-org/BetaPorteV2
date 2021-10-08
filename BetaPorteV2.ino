@@ -474,6 +474,24 @@ void loop() {
         }
       }
 
+      if (MyKeyboard.inputString.equals(F("G4"))) {
+        JSONVar jsonData;
+        if (!dialWithGoogle(NODE_NAME, "getBadges", jsonData)) {
+          Serial.println("Erreur getBadges");
+        } else {
+          for (int N = 0 ; N < jsonData.length() ; N++ ) {
+            Serial.print(jsonData[N][0]);
+            Serial.print(" ");
+            Serial.print(jsonData[N][1]);
+            Serial.print(" ");
+            Serial.print(niceDisplayTime(jsonData[N][2], true));
+            Serial.print("-");
+            Serial.print(niceDisplayTime(jsonData[N][3], true));
+            Serial.println(" ");
+          }
+        }
+      }
+
 
 
       break;
