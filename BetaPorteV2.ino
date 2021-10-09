@@ -33,7 +33,6 @@
 #include "ESP8266.h"
 
 #define APP_NAME "BetaPorte V2.0"
-// #define NODE_NAME     "Node0"   // name of the device
 
 //
 /* Evenements du Manager (voir EventsManager.h)
@@ -118,6 +117,17 @@ char lcdTransmitSign = '!';
 //enum displayMode_t { dmInfo,  dmMAX };
 //displayMode_t  displayMode = dmInfo;
 
+// rtc memory to keep date
+//struct __attribute__((packed))
+struct  {
+  // all these values are keep in RTC RAM
+  uint8_t   crc8;                 // CRC for savedRTCmemory
+  time_t    actualTimestamp;      // time stamp restored on next boot Should be update in the loop() with setActualTimestamp
+} savedRTCmemory;
+
+
+
+
 // Variable d'application locale
 String   nodeName  = "";    // nom de  la device (a configurer avec NODE=)"
 String   GKey = "";         // clef google Sheet (a configurer avec GKEY=)"
@@ -129,8 +139,8 @@ time_t   currentTime;
 int8_t   timeZone = -2;  //les heures sont toutes en localtimes
 uint16_t localBaseIndex = 0;    //version de la derniere GSheet en flash
 uint16_t gsheetBaseIndex = 0;   //version de la gsheet actuelle
-String   userPseudo = "";
-String   currentMessage = "";     // message en ligne2 du display
+String   currentMessage;        // Message deuxieme ligne de l'afficheur
+JSONVar  jsonUserInfo;          // array des info GSheet du badge detecté
 bool     configErr = false;
 
 void setup() {
@@ -186,15 +196,28 @@ void setup() {
     fatalError(2);
 
   }
+
+
   lcd.print(F("\r" LCD_CLREOL ));
   Serial.println(F("NFC Module Ok."));
 
-
   if (!MyLittleFS.begin()) {
     Serial.println(F("TW: FS en erreur  !!!!!"));
+    fatalError(3);
   }
 
+  // recuperation de l'heure dans la static ram de l'ESP
+  if (!getRTCMemory()) {
+    Serial.println("Power on boot");
+    //savedRTCmemory.crc8 = 0;
+    savedRTCmemory.actualTimestamp = 0;
+  }
 
+  // little trick to leave timeStatus to timeNotSet
+  // TODO: see with https://github.com/PaulStoffregen/Time to find a way to say timeNeedsSync
+  adjustTime(savedRTCmemory.actualTimestamp);
+
+  // recuperation de la config dans config.json
   nodeName = jobGetConfigStr(F("nodename"));
   if (nodeName == "") {
     Serial.println(F("!!! Configurer le nom de la device avec 'NODE=nodename' !!!"));
@@ -207,10 +230,7 @@ void setup() {
     Serial.println(F("!!! Configurer la clef google sheet avec 'GKEY=key google sheet' !!!"));
     configErr = true;
   }
-  D_println(GKey);
-
-
-
+  //D_println(GKey);
 
   if (configErr) {
     currentMessage = F("Config Error");
@@ -325,8 +345,11 @@ void loop() {
       break;
 
     case ev1Hz:
+
       // If we are not connected we warn the user every 30 seconds that we need to update credential
       currentTime = now();
+      savedRTCmemory.actualTimestamp = currentTime;  // save time in RTC memory
+      saveRTCmemory();
       if ( !WiFiConnected && second() % 30 ==  15) {
         // every 30 sec
         static uint16_t lastWarn = millis();
@@ -378,7 +401,7 @@ void loop() {
     case evBadgeIn: {
         beep( 1047, 200);
         MyEvents.pushDelayEvent(2 * 1000, evCheckBadge); // on laisse du temps a l'application pour lire et transmettre au moins une fois
-        MyEvents.pushDelayEvent(5 * 60 * 1000, evCheckGSheet); // on controle la base
+        MyEvents.pushDelayEvent(5 * 60 * 1000, evCheckGSheet); // on controle la base dans 5 minutes
 
         //leBadge = sBadge();
         // Affichage sur l'ecran
@@ -389,10 +412,10 @@ void loop() {
         D_println(UUID);
         if (jobCheckBadge(UUID)) {
           Serial.print("Badge Ok ");
-          D_println(userPseudo);
           lcd.setCursor(0, 0);
           lcd.println(F("Bonjour ..."));
-          lcd.println(userPseudo);
+          String pseudo = (const char*)jsonUserInfo[1];
+          lcd.println(pseudo);
           //delay(200);
 
         } else {
@@ -710,4 +733,52 @@ String niceDisplayTime(const time_t time, bool full) {
   txt += ':';
   txt += Digit2_str(second(time));
   return txt;
+}
+
+// helper to save and restore RTC_DATA
+// this is ugly but we need this to get correct sizeof()
+#define  RTC_DATA(x) (uint32_t*)&x,sizeof(x)
+
+bool saveRTCmemory() {
+  setCrc8(&savedRTCmemory.crc8 + 1, sizeof(savedRTCmemory) - 1, savedRTCmemory.crc8);
+  //system_rtc_mem_read(64, &savedRTCmemory, sizeof(savedRTCmemory));
+  return ESP.rtcUserMemoryWrite(0, RTC_DATA(savedRTCmemory) );
+}
+
+
+bool getRTCMemory() {
+  ESP.rtcUserMemoryRead(0, RTC_DATA(savedRTCmemory));
+  //Serial.print("CRC1="); Serial.println(getCrc8( (uint8_t*)&savedRTCmemory,sizeof(savedRTCmemory) ));
+  return ( setCrc8( &savedRTCmemory.crc8 + 1, sizeof(savedRTCmemory) - 1, savedRTCmemory.crc8 ) );
+}
+
+/////////////////////////////////////////////////////////////////////////
+//  crc 8 tool
+// https://www.nongnu.org/avr-libc/user-manual/group__util__crc.html
+
+
+//__attribute__((always_inline))
+inline uint8_t _crc8_ccitt_update  (uint8_t crc, const uint8_t inData)   {
+  uint8_t   i;
+  crc ^= inData;
+
+  for ( i = 0; i < 8; i++ ) {
+    if (( crc & 0x80 ) != 0 ) {
+      crc <<= 1;
+      crc ^= 0x07;
+    } else {
+      crc <<= 1;
+    }
+  }
+  return crc;
+}
+
+bool  setCrc8(const void* data, const uint16_t size, uint8_t &refCrc ) {
+  uint8_t* dataPtr = (uint8_t*)data;
+  uint8_t crc = 0xFF;
+  for (uint8_t i = 0; i < size; i++) crc = _crc8_ccitt_update(crc, *(dataPtr++));
+  //Serial.print("CRC "); Serial.print(refCrc); Serial.print(" / "); Serial.println(crc);
+  bool result = (crc == refCrc);
+  refCrc = crc;
+  return result;
 }

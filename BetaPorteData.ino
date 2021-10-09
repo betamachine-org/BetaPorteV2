@@ -156,7 +156,7 @@ bool jobCheckBadge(const String aUUID) {
     return (false);
   }
   int badgeNumber = jsonHeader["badgenumber"];
-  D_println(badgeNumber);
+  //D_println(badgeNumber);
   int N = 0;
   while (N < badgeNumber ) {
     aString = aFile.readStringUntil('\n');
@@ -164,8 +164,8 @@ bool jobCheckBadge(const String aUUID) {
     if (JSON.typeof(jsonLine) != F("array")) break;
     if ( jsonLine[0] == aUUID) {
       Serial.print("Match ");
-      D_println(jsonLine[1]);
-      userPseudo = jsonLine[1];
+      D_println((const char*)jsonLine[1]);
+      jsonUserInfo = jsonLine;
       aFile.close();
       return (true);
 

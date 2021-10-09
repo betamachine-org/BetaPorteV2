@@ -1,17 +1,8 @@
 // acessing doGet function in a google sheet
-// https://script.google.com/macros/s/AKfycbycR7N4a3pIuYFCfjR3Ys_wp7yAUb2-M6okvlhYkhzTHD6cOGaKUMcyG9MAiwltS400RQ/exec?node=test&action=getBaseInfo
-// AKfycbycR7N4a3pIuYFCfjR3Ys_wp7yAUb2-M6okvlhYkhzTHD6cOGaKUMcyG9MAiwltS400RQ
+// https://script.google.com/macros/s/google_sheet_key/exec?node=node_name&action=action_keyword
+
 
 #define SHEET_SERVER  "script.google.com"
-//#define SHEET_UID     "AKfycbycR7N4a3pIuYFCfjR3Ys_wp7yAUb2-M6okvlhYkhzTHD6cOGaKUMcyG9MAiwltS400RQ"
-//#define SHEET_URI     "https://" SHEET_SERVER "/macros/s/" SHEET_UID "/exec"
-
-
-
-// croquis utilise 422860 octets (40%) de l'espace de stockage de programmes. Le maximum est de 1044464 octets.
-//Les variables globales utilisent 29280 octets (35%) de mémoire dynamique, ce qui laisse 52640 octets pour les variables locales. Le maximum est de 81920 octets.
-
-
 
 bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonData) {
 
@@ -45,6 +36,7 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonData)
   //client.connect(HTTP_SERVER, 443);   not needed
 
   http.begin(client, aUri); //Specify request destination
+  aUri = ""; //clear memory
 
   // define requested header
   const char * headerKeys[] = {"location"} ;
