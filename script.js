@@ -1,5 +1,3 @@
-//https://script.google.com/macros/s/AKfycbycR7N4a3pIuYFCfjR3Ys_wp7yAUb2-M6okvlhYkhzTHD6cOGaKUMcyG9MAiwltS400RQ/exec
-
 function doGet(parametres) {
   try {
     var localTime = new Date();  // local Time in excel format
@@ -28,7 +26,7 @@ function doGet(parametres) {
   // indique la version de la base
   var range = SpreadsheetApp.getActiveSpreadsheet().getRangeByName('BaseInfo');
   var values = range.getValues();
-  var baseInfo = values[0][0];
+  var baseIndex = values[0][0];
   //values[1][0] = baseInfo;     // signale la version lue
   //values[1][1] = excelLocalDate(); // signale la date de lecture
   //range.setValues(values);
@@ -39,13 +37,23 @@ function doGet(parametres) {
       'action': action,
       'timestamp': timestamp,
       'timezone' : timezone,
-      'baseinfo': baseInfo,
+      'baseindex': baseIndex,
     }
 
   if (action == 'check') {
     sheet.getRange(newRow, 5).setValue('Ok');
     return ContentService.createTextOutput(JSON.stringify(eventJSON)).setMimeType(ContentService.MimeType.JSON);
   }
+  if (action == 'mark') {
+     var range = SpreadsheetApp.getActiveSpreadsheet().getRangeByName('BaseInfo');
+     var values = range.getValues();
+     values[1][0]=values[0][0];
+     range.setValues(values);
+    
+    sheet.getRange(newRow, 5).setValue('Ok');
+    return ContentService.createTextOutput(JSON.stringify(eventJSON)).setMimeType(ContentService.MimeType.JSON);
+  }
+
 
   if (action == 'getBaseInfo') {
     result = SpreadsheetApp.getActiveSpreadsheet().getRangeByName('BaseInfo').getValues();
@@ -63,6 +71,24 @@ function doGet(parametres) {
     sheet.getRange(newRow, 5).setValue('Ok');
     return ContentService.createTextOutput(JSON.stringify(eventJSON)).setMimeType(ContentService.MimeType.JSON);
   }
+
+  if (action == 'getBadges') {
+    
+    sheetBadges = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Badges');
+    numberBadges = sheetBadges.getLastRow()-1;
+    result = sheetBadges.getRange(2,1,numberBadges,6).getValues();
+    // conversion des dates
+    for (N = 0 ; N < numberBadges ; N++) {
+      result[N][2] = unixLocalTime(result[N][2]);
+      result[N][3] = unixLocalTime(result[N][3]); 
+    }
+    eventJSON.answer = result;
+    sheet.getRange(newRow, 5).setValue('Ok');
+    return ContentService.createTextOutput(JSON.stringify(eventJSON)).setMimeType(ContentService.MimeType.JSON);
+  }
+
+
+
 
   if (action == 'writeInfo') {
     //result = SpreadsheetApp.getActiveSpreadsheet().getRangeByName('PlagesHoraire').getValues();;
@@ -142,7 +168,7 @@ function doGet(parametres) {
     'status': false,
     'message': 'action unknown',
     'timestamp': timestamp,
-    'baseinfo': baseInfo,
+    'baseindex': baseIndex,
     'param': {
       'node': node,
       'action': action
@@ -169,21 +195,9 @@ function onChange(e) {
   range.setValues(values);
 }
 
-// conversion Unix Timestamp to Excel local date value
-// a float : integer part = nombre de jour depuis 1/1/1900  
-// fraction part : heure en fraction de jours
-function ZZexcelLocalDate(aTimestamp) {
-  if (!aTimestamp) aTimestamp = now();
-  // calcul de la date a la microsoft   25569 = nombre de jours entre 1/1/1900 er 1/1/1970
-  var localTime = (aTimestamp - new Date().getTimezoneOffset() * 60) / 86400 + 25569;
-  return localTime;
-}
-
 // conversion Excel date to a unix time stamp value in local time
 function unixLocalTime(aExeclDate) {
   if (!aExeclDate) aExeclDate = new Date();
-  //var unixUTC = Math.round((aExeclDate - 25569) * 86400) + (new Date().getTimezoneOffset() * 60);
-  //var unixUTC = (aExeclDate - 25569) * 86400 + (new Date().getTimezoneOffset() * 60);
   return Math.floor(aExeclDate.getTime() / 1000) - aExeclDate.getTimezoneOffset() * 60;
 }
 

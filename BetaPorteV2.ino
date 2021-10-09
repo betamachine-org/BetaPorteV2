@@ -25,7 +25,7 @@
     - Full rebuild from BetaPorte V1.3 (15/03/2020)
 
   // TODO : gerer le changement d'horaire
-  // TODO : gerer le changement NODE_NAME (nom de l'unitée)
+  // TODO : gerer le changement nodeName (nom de l'unitée)
   !! todo pushevent timezone changed
 
 *************************************************/
@@ -33,7 +33,7 @@
 #include "ESP8266.h"
 
 #define APP_NAME "BetaPorte V2.0"
-#define NODE_NAME     "Node0"   // name of the device
+// #define NODE_NAME     "Node0"   // name of the device
 
 //
 /* Evenements du Manager (voir EventsManager.h)
@@ -119,6 +119,8 @@ char lcdTransmitSign = '!';
 //displayMode_t  displayMode = dmInfo;
 
 // Variable d'application locale
+String   nodeName  = "";    // nom de  la device (a configurer avec NODE=)"
+String   GKey = "";         // clef google Sheet (a configurer avec GKEY=)"
 bool     badgePresent = false;
 bool     WiFiConnected = false;
 bool     lowPowerAllowed = false;
@@ -127,7 +129,9 @@ time_t   currentTime;
 int8_t   timeZone = -2;  //les heures sont toutes en localtimes
 uint16_t localBaseIndex = 0;    //version de la derniere GSheet en flash
 uint16_t gsheetBaseIndex = 0;   //version de la gsheet actuelle
-String userPseudo = "";
+String   userPseudo = "";
+String   currentMessage = "";     // message en ligne2 du display
+bool     configErr = false;
 
 void setup() {
 
@@ -191,13 +195,37 @@ void setup() {
   }
 
 
-  // a beep
-  beep( 880, 500);
-  delay(500);
-  beep( 988, 500);
-  delay(500);
-  beep( 1047, 500);
+  nodeName = jobGetConfigStr(F("nodename"));
+  if (nodeName == "") {
+    Serial.println(F("!!! Configurer le nom de la device avec 'NODE=nodename' !!!"));
+    configErr = true;
+  }
+  D_println(nodeName);
 
+  GKey = jobGetConfigStr(F("gkey"));
+  if (GKey == "") {
+    Serial.println(F("!!! Configurer la clef google sheet avec 'GKEY=key google sheet' !!!"));
+    configErr = true;
+  }
+  D_println(GKey);
+
+
+
+
+  if (configErr) {
+    currentMessage = F("Config Error");
+    beep( 880, 500);
+    delay(500);
+  } else {
+    currentMessage = F("device=");
+    currentMessage += nodeName;
+    // a beep
+    beep( 880, 500);
+    delay(500);
+    beep( 988, 500);
+    delay(500);
+    beep( 1047, 500);
+  }
 }
 
 String niceDisplayTime(const time_t time, bool full = false);
@@ -273,6 +301,9 @@ void loop() {
               lcd.print(Digit2_str(hour()));
               lcd.print(':');
               lcd.print(Digit2_str(minute()));
+              lcd.setCursor(0, 1);
+              lcd.print(currentMessage);
+              lcd.print(LCD_CLREOL);
               MyEvents.pushDelayEvent(300, evBlinkClock, false);
 
 
@@ -301,9 +332,9 @@ void loop() {
         static uint16_t lastWarn = millis();
         if ( millis() - lastWarn > 30 * 1000 ) {
           lastWarn = millis();
-          Serial.print(F("device not connected to local "));
+          Serial.print(F("module non connecté au Wifi local "));
           D_println(WiFi.SSID());
-          Serial.println(F("type 'W' to adjust WiFi credential"));
+          Serial.println(F("taper WIFI= pour configurer le Wifi"));
         }
       }
 
@@ -348,7 +379,7 @@ void loop() {
         beep( 1047, 200);
         MyEvents.pushDelayEvent(2 * 1000, evCheckBadge); // on laisse du temps a l'application pour lire et transmettre au moins une fois
         MyEvents.pushDelayEvent(5 * 60 * 1000, evCheckGSheet); // on controle la base
- 
+
         //leBadge = sBadge();
         // Affichage sur l'ecran
         //MyEvents.pushEvent(evShowLcd);
@@ -363,7 +394,7 @@ void loop() {
           lcd.println(F("Bonjour ..."));
           lcd.println(userPseudo);
           //delay(200);
-          
+
         } else {
           delay(200);
           beep( 444, 400);
@@ -374,8 +405,8 @@ void loop() {
           String txt = F("Badge invalide ");
           txt += UUID;
           jsonData["info"] = txt;
-          dialWithGoogle(NODE_NAME, "writeInfo", jsonData);
- 
+          dialWithGoogle(nodeName, "writeInfo", jsonData);
+
         }
 
       }
@@ -449,7 +480,7 @@ void loop() {
             D_println(int(aChar));
           }
         }
-        switch (toupper(MyKeyboard.inputChar))
+        switch (MyKeyboard.inputChar)
         {
           case '0': delay(10); break;
           case '1': delay(100); break;
@@ -457,21 +488,64 @@ void loop() {
           case '3': delay(300); break;
           case '4': delay(400); break;
           case '5': delay(500); break;
+          case 'N': {
+              Serial.println(F("SETUP NODENAME : 'NODE=nodename"));
+              String aTxt = Serial.readStringUntil('=');
+              if (aTxt != F("ODE")) {
+                aTxt = Serial.readStringUntil('\n');
+                break;
+              }
+              nodeName = Serial.readStringUntil('\n');
+              nodeName.replace("\r", "");
+              nodeName.replace(" ", "_");
+              nodeName.trim();
+              D_println(nodeName);
+              if (nodeName != "") {
+                jobSetConfigStr(F("nodename"), nodeName);
+                delay(1000);
+                helperReset();
+              }
+            }
+            break;
+
+          case 'G': {
+              Serial.println(F("SETUP GKEY : 'GKEY=google sheet key"));
+              String aTxt = Serial.readStringUntil('=');
+              if (aTxt != F("KEY")) {
+                aTxt = Serial.readStringUntil('\n');
+                break;
+              }
+              GKey = Serial.readStringUntil('\n');
+              GKey.replace("\r", "");
+              GKey.trim();
+              D_println(GKey);
+              if (GKey != "") {
+                jobSetConfigStr(F("gkey"), GKey);
+                delay(1000);
+                helperReset();
+              }
+            }
+            break;
+
+
           case 'W': {
-              Serial.println(F("SETUP WIFI : 'W WifiName,password"));
-              if ( Serial.read() == ' ') {
-                String ssid = Serial.readStringUntil(',');
-                Serial.println(ssid);
-                ssid.trim();
-                if (ssid != "") {
-                  String pass = Serial.readStringUntil('\n');
-                  pass.replace("\r", "");
-                  pass.trim();
-                  Serial.println(pass);
-                  bool result = WiFi.begin(ssid, pass);
-                  Serial.print(F("WiFi begin "));
-                  D_println(result);
-                }
+              Serial.println(F("SETUP WIFI : 'WIFI=WifiName,password"));
+              String aTxt = Serial.readStringUntil('=');
+              if (aTxt != F("IFI")) {
+                aTxt = Serial.readStringUntil('\n');
+                break;
+              }
+              String ssid = Serial.readStringUntil(',');
+              ssid.trim();
+              Serial.println(ssid);
+              if (ssid != "") {
+                String pass = Serial.readStringUntil('\n');
+                pass.replace("\r", "");
+                pass.trim();
+                Serial.println(pass);
+                bool result = WiFi.begin(ssid, pass);
+                Serial.print(F("WiFi begin "));
+                D_println(result);
               }
             }
             break;
@@ -493,17 +567,17 @@ void loop() {
         sleepOk = !sleepOk;
         D_println(sleepOk);
       }
-      if (MyKeyboard.inputString.equals(F("G0"))) {
+      if (MyKeyboard.inputString.equals(F("g0"))) {
         JSONVar jsonData;
-        if (!dialWithGoogle(NODE_NAME, "check", jsonData)) {
+        if (!dialWithGoogle(nodeName, "check", jsonData)) {
           Serial.println(F("Erreur G0"));
         } else {
           Serial.println(F("G0 Ok"));
         }
       }
-      if (MyKeyboard.inputString.equals(F("G1"))) {
+      if (MyKeyboard.inputString.equals(F("g1"))) {
         JSONVar jsonData;
-        if (!dialWithGoogle(NODE_NAME, "getBaseInfo", jsonData)) {
+        if (!dialWithGoogle(nodeName, "getBaseInfo", jsonData)) {
           Serial.println("Erreur G0");
         } else {
           Serial.print(F("Base version "));
@@ -513,19 +587,19 @@ void loop() {
         }
       }
 
-      if (MyKeyboard.inputString.equals(F("G3"))) {
+      if (MyKeyboard.inputString.equals(F("g3"))) {
         JSONVar jsonData;
         jsonData["info"] = "testG3 & test é & ! # ' + \" , . ; € ";
-        if (!dialWithGoogle(NODE_NAME, "writeInfo", jsonData)) {
+        if (!dialWithGoogle(nodeName, "writeInfo", jsonData)) {
           Serial.println("Erreur writeInfo");
         } else {
           Serial.println(F("writeInfo Ok"));
         }
       }
 
-      if (MyKeyboard.inputString.equals(F("G4"))) {
+      if (MyKeyboard.inputString.equals(F("g4"))) {
         JSONVar jsonData;
-        if (!dialWithGoogle(NODE_NAME, "getBadges", jsonData)) {
+        if (!dialWithGoogle(nodeName, "getBadges", jsonData)) {
           Serial.println("Erreur getBadges");
         } else {
           for (int N = 0 ; N < jsonData.length() ; N++ ) {

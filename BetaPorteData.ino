@@ -2,8 +2,8 @@
  *************************************************
     Sketch BetaPorteData.ino   // gestion des liste de badge, plage horaire pour betaporte
 
-    les donnée sont stockée en flash sous forme de fichier : 1 ligne de JSON stringifyed
-
+    les données badges  sont stockée en flash sous forme de fichier : 1 ligne de JSON stringifyed par badges.json
+    les donnees config sont stockée en flash sous forme de fichier : 1 ligne unique de JSON stringifyed  config.json
 
     Copyright 20201 Pierre HENRY net23@frdev.com .
 
@@ -35,7 +35,7 @@ bool jobCheckGSheet()    {
   if (!WiFiConnected) return false;
 
   JSONVar jsonData;
-  if (!dialWithGoogle(NODE_NAME, "check", jsonData)) {
+  if (!dialWithGoogle(nodeName, "check", jsonData)) {
     Serial.println(F("Erreur acces GSheet"));
     MyEvents.pushDelayEvent(1 * 3600 * 1000, evCheckGSheet); // recheck in 1 hours
     return false;
@@ -54,7 +54,7 @@ bool jobMarkIndexReadGSheet()    {
   if (!WiFiConnected) return false;
 
   JSONVar jsonData;
-  if (!dialWithGoogle(NODE_NAME, "mark", jsonData)) {
+  if (!dialWithGoogle(nodeName, "mark", jsonData)) {
     Serial.println(F("Erreur acces GSheet"));
     MyEvents.pushDelayEvent(1 * 3600 * 1000, evCheckGSheet); // recheck in 1 hours
     return false;
@@ -67,7 +67,7 @@ bool jobMarkIndexReadGSheet()    {
 bool jobReadBadgesGSheeet() {
   Serial.println(F("jobReadBadgesGSheeet"));
   JSONVar jsonData;
-  if (!dialWithGoogle(NODE_NAME, "getBadges", jsonData)) return (false);
+  if (!dialWithGoogle(nodeName, "getBadges", jsonData)) return (false);
   uint16_t badgeNumber = jsonData.length();
   D_println(badgeNumber);
   if (badgeNumber >= 1000) {
@@ -75,6 +75,7 @@ bool jobReadBadgesGSheeet() {
   }
 
   File aFile = MyLittleFS.open(F("/badges.json"), "w");
+  if (!aFile) return false;
   JSONVar jsonHeader;
   jsonHeader["baseindex"] = gsheetBaseIndex;
   jsonHeader["timestamp"] = currentTime;
@@ -108,6 +109,7 @@ bool jobReadBadgesGSheeet() {
   D_println(aString);  //aString => '{"baseindex":19,"timestamp":1633712861,"badgenumber":5}
 
   aFile.close();
+  
   return (true);
 }
 
@@ -178,4 +180,34 @@ bool jobCheckBadge(const String aUUID) {
   aFile.close();
   return (false);
 
+}
+
+//get a value of a config key
+String jobGetConfigStr(const String aKey) {
+  String result = "";
+  File aFile = MyLittleFS.open(F("/config.json"), "r");
+  if (!aFile) return (result);
+  
+  JSONVar jsonConfig = JSON.parse(aFile.readStringUntil('\n'));
+  aFile.close();
+  if (JSON.typeof(jsonConfig[aKey]) == F("string") ) result = jsonConfig[aKey];
+
+  return (result);
+}
+
+// set a value of a config key
+//todo : check if config is realy write ?
+bool jobSetConfigStr(const String aKey,const String aValue) {
+   // read current config
+  JSONVar jsonConfig;  // empry config
+  File aFile = MyLittleFS.open(F("/config.json"), "r");
+  if (aFile) jsonConfig = JSON.parse(aFile.readStringUntil('\n'));
+  aFile.close();
+  jsonConfig[aKey]=aValue;
+  aFile = MyLittleFS.open(F("/config.json"), "w");
+  if (!aFile) return (false);
+  D_println(JSON.stringify(jsonConfig));
+  aFile.println(JSON.stringify(jsonConfig));
+  aFile.close();
+  return (true);
 }

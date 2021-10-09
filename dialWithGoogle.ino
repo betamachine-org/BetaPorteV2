@@ -3,8 +3,8 @@
 // AKfycbycR7N4a3pIuYFCfjR3Ys_wp7yAUb2-M6okvlhYkhzTHD6cOGaKUMcyG9MAiwltS400RQ
 
 #define SHEET_SERVER  "script.google.com"
-#define SHEET_UID     "AKfycbycR7N4a3pIuYFCfjR3Ys_wp7yAUb2-M6okvlhYkhzTHD6cOGaKUMcyG9MAiwltS400RQ"
-#define SHEET_URI     "https://" SHEET_SERVER "/macros/s/" SHEET_UID "/exec"
+//#define SHEET_UID     "AKfycbycR7N4a3pIuYFCfjR3Ys_wp7yAUb2-M6okvlhYkhzTHD6cOGaKUMcyG9MAiwltS400RQ"
+//#define SHEET_URI     "https://" SHEET_SERVER "/macros/s/" SHEET_UID "/exec"
 
 
 
@@ -15,13 +15,16 @@
 
 bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonData) {
 
-  Serial.print(F("Dial With gSheet as "));
+  Serial.print(F("Dial With gSheet as '"));
   Serial.print(aNode);
   Serial.print(':');
-  Serial.println(aAction);
-  String aUri = F(SHEET_URI);
-
-  aUri += F("?node=");
+  Serial.print(aAction);
+  Serial.println('\'');
+  if (aNode == "" || GKey == "" || aAction == "") return (false);
+  String aUri = F("https://" SHEET_SERVER "/macros/s/");
+  aUri += GKey;
+  
+  aUri += F("/exec?node=");
   aUri += encodeUri(aNode);;
 
   aUri += F("&action=");
