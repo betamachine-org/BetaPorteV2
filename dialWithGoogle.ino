@@ -2,41 +2,46 @@
 // https://script.google.com/macros/s/google_sheet_key/exec?node=node_name&action=action_keyword
 
 
+
+
 #define SHEET_SERVER  "script.google.com"
-
+// need about 22K of ram !!!!!! WiFiClientSecure
 bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonData) {
-
+  //  HTTPClient http;  //Declare an object of class HTTPClient
+  WiFiClientSecure client;
   Serial.print(F("Dial With gSheet as '"));
   Serial.print(aNode);
   Serial.print(':');
   Serial.print(aAction);
   Serial.println('\'');
-  if (aNode == "" || GKey == "" || aAction == "") return (false);
-  String aUri = F("https://" SHEET_SERVER "/macros/s/");
-  aUri += GKey;
-  
-  aUri += F("/exec?node=");
-  aUri += encodeUri(aNode);;
+  {
+    String GKey = jobGetConfigStr(F("gkey"));
+    if (aNode == "" || GKey == "" || aAction == "") return (false);
+    String aUri = F("https://" SHEET_SERVER "/macros/s/");
+    aUri += GKey;
 
-  aUri += F("&action=");
-  aUri += encodeUri(aAction);;
+    aUri += F("/exec?node=");
+    aUri += encodeUri(aNode);;
 
-  //  D_println(JSON.typeof(jsonData));
-  // les parametres eventuels sont passées en JSON dans le parametre '&json='
-  if (JSON.typeof(jsonData) == F("object") ) {
-    aUri += F("&json=");
-    aUri += encodeUri(JSON.stringify(jsonData));
-  }
-  //  D_println(aUri);
+    aUri += F("&action=");
+    aUri += encodeUri(aAction);;
 
-  WiFiClientSecure client;
-  HTTPClient http;  //Declare an object of class HTTPClient
-  // !!! TODO get a set of valid root certificate for google !!!!
-  client.setInsecure(); //the magic line, use with caution  !!! certificate not checked
-  //client.connect(HTTP_SERVER, 443);   not needed
+    //  D_println(JSON.typeof(jsonData));
+    // les parametres eventuels sont passées en JSON dans le parametre '&json='
+    if (JSON.typeof(jsonData) == F("object") ) {
+      aUri += F("&json=");
+      aUri += encodeUri(JSON.stringify(jsonData));
+    }
+    //  D_println(aUri);
 
-  http.begin(client, aUri); //Specify request destination
-  aUri = ""; //clear memory
+    //  WiFiClientSecure client;
+    //  HTTPClient http;  //Declare an object of class HTTPClient
+    // !!! TODO get a set of valid root certificate for google !!!!
+    client.setInsecure(); //the magic line, use with caution  !!! certificate not checked
+    client.disconnect();   not needed
+
+    http.begin(client, aUri); //Specify request destination
+  } //clear string memory
 
   // define requested header
   const char * headerKeys[] = {"location"} ;
@@ -66,17 +71,27 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonData)
     http.end();   //Close connection
     return (false);
   }
+  D_println(MyEvents.freeRam() + 0);
   {
     String payload = http.getString();   //Get the request response payload
+    D_println(MyEvents.freeRam() + 1);
+ 
+
     http.end();   //Close connection
+    D_println(MyEvents.freeRam() + 2);
     D_println(payload);             //Print the response payload
     jsonData = JSON.parse(payload);
+    D_println(MyEvents.freeRam() + 3);
   } // free payload (can be hudge in memory)
-
-  if (JSON.typeof(jsonData) != F("object")) return (false);
+  D_println(MyEvents.freeRam() + 4);
+  if (JSON.typeof(jsonData) != F("object")) {
+    D_println(JSON.typeof(jsonData));
+    return (false);
+  }
 
   // super check json data for "status" is a bool true  to avoid foolish data then supose all json data are ok.
   if (!jsonData.hasOwnProperty("status") || JSON.typeof(jsonData["status"]) != F("boolean") || !jsonData["status"]) {
+    D_println(JSON.typeof(jsonData["status"]));
     return (false);
   }
 
@@ -94,8 +109,10 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonData)
     }
     D_println(jsonData["baseindex"]);
   }
-//  D_println( niceDisplayTime(jsonData["timestamp"]) );
+  //  D_println( niceDisplayTime(jsonData["timestamp"]) );
+  D_println(MyEvents.freeRam());
   JSONVar answer = jsonData["answer"];  // cant grab object from the same object
+  D_println(MyEvents.freeRam());
   jsonData = answer;                    // so memory use is temporary duplicated here
   return (true);
 

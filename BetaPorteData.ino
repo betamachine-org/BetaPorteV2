@@ -64,10 +64,12 @@ bool jobMarkIndexReadGSheet()    {
 
 
 // lecture des badges puis ecriture sur la flash fichier badges.json
-bool jobReadBadgesGSheeet() {
+bool jobReadBadgesGSheet() {
   Serial.println(F("jobReadBadgesGSheeet"));
+  D_println(MyEvents.freeRam() + 01);
   JSONVar jsonData;
   if (!dialWithGoogle(nodeName, "getBadges", jsonData)) return (false);
+  D_println(MyEvents.freeRam() + 02);
   uint16_t badgeNumber = jsonData.length();
   D_println(badgeNumber);
   if (badgeNumber >= 1000) {
@@ -76,18 +78,19 @@ bool jobReadBadgesGSheeet() {
 
   File aFile = MyLittleFS.open(F("/badges.json"), "w");
   if (!aFile) return false;
-  JSONVar jsonHeader;
-  jsonHeader["baseindex"] = gsheetBaseIndex;
-  jsonHeader["timestamp"] = currentTime;
-  jsonHeader["badgenumber"] = badgeNumber;
-  aFile.println(JSON.stringify(jsonHeader));
-  //String header = "{\"baseindex\":";
-  //header += gsheetBaseIndex;
-  //header += '}';
-  //aFile.println(header);
+  {
+    JSONVar jsonHeader;
+    jsonHeader["baseindex"] = gsheetBaseIndex;
+    jsonHeader["timestamp"] = currentTime;
+    jsonHeader["badgenumber"] = badgeNumber;
+    aFile.println(JSON.stringify(jsonHeader));
+    D_println(MyEvents.freeRam() + 03);
+
+  }
+  D_println(MyEvents.freeRam() + 04);
   for (int N = 0 ; N < badgeNumber ; N++ ) {
     String aLine = JSON.stringify(jsonData[N]);
-    D_println(aLine);
+    D_println(aLine);  //["043826CAAA5C81","Test_01A",1609459200,1640908800,0,"PERM"]
     aFile.println(aLine);
 
     //    Serial.print(jsonData[N][0]);
@@ -109,7 +112,8 @@ bool jobReadBadgesGSheeet() {
   D_println(aString);  //aString => '{"baseindex":19,"timestamp":1633712861,"badgenumber":5}
 
   aFile.close();
-  
+  D_println(MyEvents.freeRam() + 05);
+
   return (true);
 }
 
@@ -187,7 +191,7 @@ String jobGetConfigStr(const String aKey) {
   String result = "";
   File aFile = MyLittleFS.open(F("/config.json"), "r");
   if (!aFile) return (result);
-  
+
   JSONVar jsonConfig = JSON.parse(aFile.readStringUntil('\n'));
   aFile.close();
   if (JSON.typeof(jsonConfig[aKey]) == F("string") ) result = jsonConfig[aKey];
@@ -197,13 +201,13 @@ String jobGetConfigStr(const String aKey) {
 
 // set a value of a config key
 //todo : check if config is realy write ?
-bool jobSetConfigStr(const String aKey,const String aValue) {
-   // read current config
+bool jobSetConfigStr(const String aKey, const String aValue) {
+  // read current config
   JSONVar jsonConfig;  // empry config
   File aFile = MyLittleFS.open(F("/config.json"), "r");
   if (aFile) jsonConfig = JSON.parse(aFile.readStringUntil('\n'));
   aFile.close();
-  jsonConfig[aKey]=aValue;
+  jsonConfig[aKey] = aValue;
   aFile = MyLittleFS.open(F("/config.json"), "w");
   if (!aFile) return (false);
   D_println(JSON.stringify(jsonConfig));

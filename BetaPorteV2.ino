@@ -105,6 +105,8 @@ BadgeNfc_PN532_I2C lecteurBadge;   // instance du lecteur de badge
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <Arduino_JSON.h>
+//WiFiClientSecure client;
+HTTPClient http;  //Declare an object of class HTTPClient (Gsheet and webclock)
 
 bool sleepOk = true;
 int  multi = 0; // nombre de clic rapide
@@ -130,7 +132,7 @@ struct  {
 
 // Variable d'application locale
 String   nodeName  = "";    // nom de  la device (a configurer avec NODE=)"
-String   GKey = "";         // clef google Sheet (a configurer avec GKEY=)"
+//String   GKey = "";         // clef google Sheet (a configurer avec GKEY=)"
 bool     badgePresent = false;
 bool     WiFiConnected = false;
 bool     lowPowerAllowed = false;
@@ -225,8 +227,8 @@ void setup() {
   }
   D_println(nodeName);
 
-  GKey = jobGetConfigStr(F("gkey"));
-  if (GKey == "") {
+  //GKey = jobGetConfigStr(F("gkey"));
+  if (jobGetConfigStr(F("gkey")) == "") {
     Serial.println(F("!!! Configurer la clef google sheet avec 'GKEY=key google sheet' !!!"));
     configErr = true;
   }
@@ -246,6 +248,7 @@ void setup() {
     delay(500);
     beep( 1047, 500);
   }
+  D_println(MyEvents.freeRam());
 }
 
 String niceDisplayTime(const time_t time, bool full = false);
@@ -444,7 +447,7 @@ void loop() {
     case evReadGSheet: {
         Serial.println(F("evReadGSheet"));
         // marque la version comme lue au moins un fois
-        if ( jobMarkIndexReadGSheet() && jobReadBadgesGSheeet() ) {
+        if ( jobMarkIndexReadGSheet() && jobReadBadgesGSheet() ) {
           localBaseIndex = gsheetBaseIndex;  // mise a jour de l'index base local
           D_println(localBaseIndex);
         } else {
@@ -538,7 +541,7 @@ void loop() {
                 aTxt = Serial.readStringUntil('\n');
                 break;
               }
-              GKey = Serial.readStringUntil('\n');
+              String GKey = Serial.readStringUntil('\n');
               GKey.replace("\r", "");
               GKey.trim();
               D_println(GKey);
@@ -621,21 +624,8 @@ void loop() {
       }
 
       if (MyKeyboard.inputString.equals(F("g4"))) {
-        JSONVar jsonData;
-        if (!dialWithGoogle(nodeName, "getBadges", jsonData)) {
-          Serial.println("Erreur getBadges");
-        } else {
-          for (int N = 0 ; N < jsonData.length() ; N++ ) {
-            Serial.print(jsonData[N][0]);
-            Serial.print(" ");
-            Serial.print(jsonData[N][1]);
-            Serial.print(" ");
-            Serial.print(niceDisplayTime(jsonData[N][2], true));
-            Serial.print("-");
-            Serial.print(niceDisplayTime(jsonData[N][3], true));
-            Serial.println(" ");
-          }
-        }
+        bool jReadBadgesGSheet = jobReadBadgesGSheet();
+        D_println(jReadBadgesGSheet);
       }
 
 

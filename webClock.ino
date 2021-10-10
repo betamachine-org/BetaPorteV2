@@ -16,10 +16,10 @@ time_t getWebTime() {
   Serial.println(F("connect to " HTTP_SERVER " to get time"));
 
   WiFiClient client;
-  HTTPClient http;  //Declare an object of class HTTPClient
+//  HTTPClient http;  //Declare an object of class HTTPClient
 
   http.begin(client, "http://" HTTP_SERVER); //Specify request destination
-  // we need date to setup clock so 
+  // we need date to setup clock so
   const char * headerKeys[] = {"date"} ;
   const size_t numberOfHeaders = 1;
   http.collectHeaders(headerKeys, numberOfHeaders);
@@ -69,6 +69,7 @@ time_t getWebTime() {
   int deltaTime = serverTS - currentTime;
   D_println(deltaTime);
   D_println(niceDisplayTime(serverTS));
+  D_println(MyEvents.freeRam());
   // we dont use the payload here
   //String payload = http.getString();   //Get the request response payload
   //Serial.println(payload);             //Print the response payload
