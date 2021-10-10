@@ -5,10 +5,14 @@
 
 
 #define SHEET_SERVER  "script.google.com"
-// need about 22K of ram !!!!!! WiFiClientSecure
-bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonData) {
+// need about 30K of ram !!!!!! WiFiClientSecure
+bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonParam) {
   // (global) HTTPClient http;  //Declare an object of class HTTPClient
   D_println(MyEvents.freeRam() + 000);
+  if (MyEvents.freeRam() < 44000) {
+    Serial.println(F("https need more memory"));
+    return (false);
+  }
   Serial.print(F("Dial With gSheet as '"));
   Serial.print(aNode);
   Serial.print(':');
@@ -27,11 +31,11 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonData)
     bigString += F("&action=");
     bigString += encodeUri(aAction);;
 
-    //  D_println(JSON.typeof(jsonData));
+    //  D_println(JSON.typeof(jsonParam));
     // les parametres eventuels sont passées en JSON dans le parametre '&json='
-    if (JSON.typeof(jsonData) == F("object") ) {
+    if (JSON.typeof(jsonParam) == F("object") ) {
       bigString += F("&json=");
-      bigString += encodeUri(JSON.stringify(jsonData));
+      bigString += encodeUri(JSON.stringify(jsonParam));
     }
     //  D_println(aUri);
 
@@ -61,15 +65,14 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonData)
       http.collectHeaders(headerKeys, numberOfHeaders);
 
       httpCode = http.GET();//Send the request
-      D_println(MyEvents.freeRam() + 03);
     }
     bigString = "";
-//    if (httpCode < 0) {
-//      Serial.print(F("cant get an answer :( http.GET()="));
-//      Serial.println(httpCode);
-//      http.end();   //Close connection
-//      return (false);
-//    }
+    //    if (httpCode < 0) {
+    //      Serial.print(F("cant get an answer :( http.GET()="));
+    //      Serial.println(httpCode);
+    //      http.end();   //Close connection
+    //      return (false);
+    //    }
 
     if (httpCode != 200) {
       Serial.print(F("got an error in http.GET() "));
@@ -77,47 +80,45 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonData)
       http.end();   //Close connection
       return (false);
     }
-    D_println(MyEvents.freeRam() + 04);
 
     bigString = http.getString();   //Get the request response payload
     D_println(MyEvents.freeRam() + 1);
-
     http.end();   //Close connection (restore 22K of ram)
   } //clear string and http memory
+  D_println(MyEvents.freeRam() + 04);
   D_println(bigString);             //Print the response payload
-  jsonData = JSON.parse(bigString);
-  D_println(MyEvents.freeRam() + 3);
+  JSONVar jsonPayload = JSON.parse(bigString);
+  D_println(MyEvents.freeRam() + 05);
   bigString = "";
-  if (JSON.typeof(jsonData) != F("object")) {
-    D_println(JSON.typeof(jsonData));
+  if (JSON.typeof(jsonPayload) != F("object")) {
+    D_println(JSON.typeof(jsonPayload));
     return (false);
   }
 
   // super check json data for "status" is a bool true  to avoid foolish data then supose all json data are ok.
-  if (!jsonData.hasOwnProperty("status") || JSON.typeof(jsonData["status"]) != F("boolean") || !jsonData["status"]) {
-    D_println(JSON.typeof(jsonData["status"]));
+  if (!jsonPayload.hasOwnProperty("status") || JSON.typeof(jsonPayload["status"]) != F("boolean") || !jsonPayload["status"]) {
+    D_println(JSON.typeof(jsonPayload["status"]));
     return (false);
   }
 
   // localzone de la sheet pour l'ajustement heure hiver ete
-  if (JSON.typeof(jsonData["timezone"]) == F("number") ) {
-    timeZone = (int)jsonData["timezone"];
+  if (JSON.typeof(jsonPayload["timezone"]) == F("number") ) {
+    timeZone = (int)jsonPayload["timezone"];
     //!! todo pushevent timezone changed
   }
   // version des donnée de la feuille pour mettre a jour les données
-  if (JSON.typeof(jsonData["baseindex"]) == F("number") ) {
-    uint16_t baseIndex = (int)jsonData["baseindex"];
+  if (JSON.typeof(jsonPayload["baseindex"]) == F("number") ) {
+    uint16_t baseIndex = (int)jsonPayload["baseindex"];
     if ( localBaseIndex != baseIndex ) {
       gsheetBaseIndex = baseIndex;
       D_println(gsheetBaseIndex);
     }
-    D_println(jsonData["baseindex"]);
+    D_println(jsonPayload["baseindex"]);
   }
   //  D_println( niceDisplayTime(jsonData["timestamp"]) );
-  D_println(MyEvents.freeRam());
-  JSONVar answer = jsonData["answer"];  // cant grab object from the same object
+  JSONVar answer = jsonPayload["answer"];  // cant grab object from the another not new object
+  jsonParam = answer;                    // so memory use is temporary duplicated here
   D_println(MyEvents.freeRam() + 001);
-  jsonData = answer;                    // so memory use is temporary duplicated here
   return (true);
 
 

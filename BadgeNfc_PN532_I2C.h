@@ -15,7 +15,7 @@
 
 
 #include "Arduino.h"
-#define  VERBOSE 
+//#define  VERBOSE 
 
 
 //const int  NFC_TIMEOUT = 40;  // 30 < 10' de sec environ   300 environ 8 sec  mini 15 sinon cela ne marceh pas !!!!!

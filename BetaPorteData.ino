@@ -167,7 +167,7 @@ bool jobCheckBadge(const String aUUID) {
     JSONVar jsonLine = JSON.parse(aString);
     if (JSON.typeof(jsonLine) != F("array")) break;
     if ( jsonLine[0] == aUUID) {
-      Serial.print("Match ");
+      Serial.print(F("Match "));
       D_println((const char*)jsonLine[1]);
       jsonUserInfo = jsonLine;
       aFile.close();

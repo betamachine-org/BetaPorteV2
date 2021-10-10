@@ -199,19 +199,15 @@ void setup() {
 
   }
 
-
-  lcd.print(F("\r" LCD_CLREOL ));
   Serial.println(F("NFC Module Ok."));
 
   if (!MyLittleFS.begin()) {
-    Serial.println(F("TW: FS en erreur  !!!!!"));
+    Serial.println(F("erreur MyLittleFS"));
     fatalError(3);
   }
 
   // recuperation de l'heure dans la static ram de l'ESP
   if (!getRTCMemory()) {
-    Serial.println("Power on boot");
-    //savedRTCmemory.crc8 = 0;
     savedRTCmemory.actualTimestamp = 0;
   }
 
@@ -229,7 +225,7 @@ void setup() {
 
   //GKey = jobGetConfigStr(F("gkey"));
   if (jobGetConfigStr(F("gkey")) == "") {
-    Serial.println(F("!!! Configurer la clef google sheet avec 'GKEY=key google sheet' !!!"));
+    Serial.println(F("!!! Configurer la clef google sheet avec 'GKEY=key' !!!"));
     configErr = true;
   }
   //D_println(GKey);
@@ -355,13 +351,9 @@ void loop() {
       saveRTCmemory();
       if ( !WiFiConnected && second() % 30 ==  15) {
         // every 30 sec
-        static uint16_t lastWarn = millis();
-        if ( millis() - lastWarn > 30 * 1000 ) {
-          lastWarn = millis();
-          Serial.print(F("module non connecté au Wifi local "));
-          D_println(WiFi.SSID());
-          Serial.println(F("taper WIFI= pour configurer le Wifi"));
-        }
+        Serial.print(F("module non connecté au Wifi local "));
+        D_println(WiFi.SSID());
+        Serial.println(F("taper WIFI= pour configurer le Wifi"));
       }
 
       if (!lcdOk && checkI2C(LCD_I2CADR)) {
@@ -414,7 +406,7 @@ void loop() {
         String UUID = lecteurBadge.getUUIDTag();
         D_println(UUID);
         if (jobCheckBadge(UUID)) {
-          Serial.print("Badge Ok ");
+          Serial.print(F("Badge Ok "));
           lcd.setCursor(0, 0);
           lcd.println(F("Bonjour ..."));
           String pseudo = (const char*)jsonUserInfo[1];
