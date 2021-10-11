@@ -69,12 +69,15 @@ bool jobReadBadgesGSheet() {
   D_println(MyEvents.freeRam() + 01);
   JSONVar jsonData;
   if (!dialWithGoogle(nodeName, "getBadges", jsonData)) return (false);
+  uint16_t first = (int)jsonData["first"];
+  uint16_t len = (int)jsonData["len"];
+  uint16_t total = (int)jsonData["total"];
+  bool eof = jsonData["eof"];
+  D_println(total);
+  D_println(first);
+  D_println(len);
+  D_println(eof);
   D_println(MyEvents.freeRam() + 02);
-  uint16_t badgeNumber = jsonData.length();
-  D_println(badgeNumber);
-  if (badgeNumber >= 1000) {
-    badgeNumber = 1000;
-  }
 
   File aFile = MyLittleFS.open(F("/badges.json"), "w");
   if (!aFile) return false;
@@ -82,14 +85,14 @@ bool jobReadBadgesGSheet() {
     JSONVar jsonHeader;
     jsonHeader["baseindex"] = gsheetBaseIndex;
     jsonHeader["timestamp"] = currentTime;
-    jsonHeader["badgenumber"] = badgeNumber;
+    jsonHeader["badgenumber"] = total;
     aFile.println(JSON.stringify(jsonHeader));
     D_println(MyEvents.freeRam() + 03);
 
   }
   D_println(MyEvents.freeRam() + 04);
-  for (int N = 0 ; N < badgeNumber ; N++ ) {
-    String aLine = JSON.stringify(jsonData[N]);
+  for (int N = 0 ; N < len ; N++ ) {
+    String aLine = JSON.stringify(jsonData["badges"][N]);
     D_println(aLine);  //["043826CAAA5C81","Test_01A",1609459200,1640908800,0,"PERM"]
     aFile.println(aLine);
 
@@ -99,8 +102,8 @@ bool jobReadBadgesGSheet() {
     //    Serial.print(" ");
     //    Serial.print(niceDisplayTime(jsonData[N][2], true));
     //    Serial.print("-");
-    //    Serial.print(niceDisplayTime(jsonData[N][3], true));
-    //    Serial.println(" ");
+    Serial.print(niceDisplayTime(jsonData["badges"][N][3], true));
+    Serial.println(" ");
   }
   aFile.close();
   aFile = MyLittleFS.open(F("/badges.json"), "r");
