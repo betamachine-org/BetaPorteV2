@@ -441,7 +441,7 @@ void loop() {
     case evReadGSheet: {
         Serial.println(F("evReadGSheet"));
         if ( jobReadBadgesGSheet() ) {
-//          localBaseIndex = gsheetBaseIndex;  // mise a jour de l'index base local
+          //          localBaseIndex = gsheetBaseIndex;  // mise a jour de l'index base local
           D_println(localBaseIndex);
           D_println(gsheetBaseIndex);
           D_println(gsheetIndex);
@@ -495,11 +495,11 @@ void loop() {
     case evInChar: {
         if (MyDebug.trackTime < 2) {
           char aChar = MyKeyboard.inputChar;
-          if (isPrintable(aChar)) {
-            D_println(aChar);
-          } else {
-            D_println(int(aChar));
-          }
+//          if (isPrintable(aChar)) {
+//            D_println(aChar);
+//          } else {
+//            D_println(int(aChar));
+//          }
         }
         switch (MyKeyboard.inputChar)
         {
@@ -584,30 +584,21 @@ void loop() {
         Serial.println(F("RESET"));
         MyEvents.pushEvent(doReset);
       }
+      if (MyKeyboard.inputString.equals(F("FREE"))) {
+        D_println(MyEvents.freeRam());
+      }
       if (MyKeyboard.inputString.equals("S")) {
         sleepOk = !sleepOk;
         D_println(sleepOk);
       }
       if (MyKeyboard.inputString.equals(F("g0"))) {
         JSONVar jsonData;
-        if (!dialWithGoogle(nodeName, "check", jsonData)) {
-          Serial.println(F("Erreur G0"));
+        if (!dialWithGoogle(nodeName, F("check"), jsonData)) {
+          Serial.println(F("Erreur check"));
         } else {
-          Serial.println(F("G0 Ok"));
+          Serial.println(F("check Ok"));
         }
       }
-      if (MyKeyboard.inputString.equals(F("g1"))) {
-        JSONVar jsonData;
-        if (!dialWithGoogle(nodeName, "getBaseInfo", jsonData)) {
-          Serial.println("Erreur G0");
-        } else {
-          Serial.print(F("Base version "));
-          Serial.print(jsonData[0][0]);
-          Serial.print(F(" du "));
-          Serial.println(niceDisplayTime(jsonData[0][1], true ));
-        }
-      }
-
       if (MyKeyboard.inputString.equals(F("g3"))) {
         JSONVar jsonData;
         jsonData["info"] = "testG3 & test é & ! # ' + \" , . ; € ";

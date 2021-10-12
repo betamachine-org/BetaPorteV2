@@ -31,17 +31,18 @@
 // si la baseIndex n'est pas a jour on lance un evReadGsheet
 
 bool jobCheckGSheet()    {
-  Serial.print(F("jobCheckGSheet"));
+  Serial.println(F("jobCheckGSheet"));
   if (!WiFiConnected) return false;
-
+  MyEvents.pushDelayEvent(1 * 3600 * 1000, evCheckGSheet); // recheck in 1 hours
   JSONVar jsonData;
   if (!dialWithGoogle(nodeName, "check", jsonData)) {
     Serial.println(F("Erreur acces GSheet"));
-    MyEvents.pushDelayEvent(1 * 3600 * 1000, evCheckGSheet); // recheck in 1 hours
+
     return false;
   }
-
-  if (localBaseIndex != gsheetBaseIndex) {
+  uint16_t baseIndex = (int)jsonData["baseindex"];
+  if ( localBaseIndex != baseIndex ) {
+    gsheetBaseIndex = baseIndex;
     Serial.println(F("demande de relecture des données GSheet"));
     MyEvents.pushDelayEvent(10 * 1000, evReadGSheet); // reread data from 0
   }
@@ -68,7 +69,7 @@ bool jobCheckGSheet()    {
 //
 bool jobReadBadgesGSheet() {
   D_println(MyEvents.freeRam() + 01);
-
+  MyEvents.pushDelayEvent(15 * 60 * 1000, evCheckGSheet); // recheck in 15 min en cas d'erreur
   Serial.print(F("jobReadBadgesGSheeet at "));
   Serial.println(gsheetIndex);
   if (gsheetIndex == 0) {
@@ -85,18 +86,24 @@ bool jobReadBadgesGSheet() {
   uint16_t first = (int)jsonData["first"];
   uint16_t len = (int)jsonData["len"];
   uint16_t total = (int)jsonData["total"];
+  uint16_t baseIndex = (int)jsonData["baseindex"];
   bool eof = jsonData["eof"];
+  D_println(baseIndex);
   D_println(total);
   D_println(first);
   D_println(len);
   D_println(eof);
   D_println(MyEvents.freeRam() + 02);
-
+  if (baseIndex != gsheetBaseIndex) {
+    Serial.println(F("Abort lecture : new baseIndex"));
+    gsheetBaseIndex = baseIndex;
+    return(false);
+  }
   File aFile = MyLittleFS.open(F("/badges.tmp"), "a");
   if (!aFile) return false;
   if (first == 1) {
     JSONVar jsonHeader;
-    jsonHeader["baseindex"] = gsheetBaseIndex;
+    jsonHeader["baseindex"] = baseIndex;
     jsonHeader["timestamp"] = currentTime;
     jsonHeader["badgenumber"] = total;
     aFile.println(JSON.stringify(jsonHeader));
@@ -134,6 +141,10 @@ bool jobReadBadgesGSheet() {
   } else {
     MyLittleFS.remove(F("/badges.json"));
     MyLittleFS.rename(F("/badges.tmp"), F("/badges.json"));
+    MyEvents.pushDelayEvent(0.6 * 3600 * 1000, evCheckGSheet); // recheck in 6 hours
+    localBaseIndex = baseIndex;
+    Serial.print(F("New base "));
+    D_println(localBaseIndex);
   }
 
 
@@ -143,31 +154,31 @@ bool jobReadBadgesGSheet() {
   return (true);
 }
 
-// lecture de la version de la base sur la flash fichier badges.json
-bool jobGetBaseIndex() {
-  File aFile = MyLittleFS.open(F("/badges.json"), "r");
-  if (!aFile) return (false);
-
-  String aString = aFile.readStringUntil('\n');
-  aFile.close();
-  D_println(aString);  //aString => '{"baseindex":19,"timestamp":1633712861,"badgenumber":5}
-
-  JSONVar jsonHeader = JSON.parse(aString);
-  if (JSON.typeof(jsonHeader) != F("object")) return (false);
-
-  // super check json data for "status" is a bool true  to avoid foolish data then supose all json data are ok.
-  if (!jsonHeader.hasOwnProperty("baseindex") || JSON.typeof(jsonHeader["baseindex"]) != F("number") ) {
-    return (false);
-  }
-  localBaseIndex = (int)jsonHeader["baseindex"];
-  gsheetBaseIndex = localBaseIndex;
-  D_println(localBaseIndex);
-
-
-
-  return (true);
-
-}
+//// lecture de la version de la base sur la flash fichier badges.json
+//bool jobGetBaseIndex() {
+//  File aFile = MyLittleFS.open(F("/badges.json"), "r");
+//  if (!aFile) return (false);
+//
+//  String aString = aFile.readStringUntil('\n');
+//  aFile.close();
+//  D_println(aString);  //aString => '{"baseindex":19,"timestamp":1633712861,"badgenumber":5}
+//
+//  JSONVar jsonHeader = JSON.parse(aString);
+//  if (JSON.typeof(jsonHeader) != F("object")) return (false);
+//
+//  // super check json data for "status" is a bool true  to avoid foolish data then supose all json data are ok.
+//  if (!jsonHeader.hasOwnProperty("baseindex") || JSON.typeof(jsonHeader["baseindex"]) != F("number") ) {
+//    return (false);
+//  }
+//  localBaseIndex = (int)jsonHeader["baseindex"];
+//  gsheetBaseIndex = localBaseIndex;
+//  D_println(localBaseIndex);
+//
+//
+//
+//  return (true);
+//
+//}
 
 
 
@@ -190,12 +201,12 @@ bool jobCheckBadge(const String aUUID) {
   int N = 0;
   while (N < badgeNumber ) {
     aString = aFile.readStringUntil('\n');
-  //  D_println(aString);
+    //  D_println(aString);
     JSONVar jsonLine = JSON.parse(aString);
     if (JSON.typeof(jsonLine) != F("array")) break;
     if ( jsonLine[0] == aUUID) {
       Serial.print(F("Match "));
-       D_println((const char*)jsonLine[1]);
+      D_println((const char*)jsonLine[1]);
       jsonUserInfo = jsonLine;
       aFile.close();
       return (true);

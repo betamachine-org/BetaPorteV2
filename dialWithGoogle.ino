@@ -8,16 +8,16 @@
 // need about 30K of ram !!!!!! WiFiClientSecure
 bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonParam) {
   // (global) HTTPClient http;  //Declare an object of class HTTPClient
-  D_println(MyEvents.freeRam() + 000);
-  if (MyEvents.freeRam() < 44000) {
-    Serial.println(F("https need more memory"));
-    return (false);
-  }
-  Serial.print(F("Dial With gSheet as '"));
+   Serial.print(F("Dial With gSheet as '"));
   Serial.print(aNode);
   Serial.print(':');
   Serial.print(aAction);
   Serial.println('\'');
+ D_println(MyEvents.freeRam() + 000);
+  if (MyEvents.freeRam() < 44000) {
+    Serial.println(F("https need more memory"));
+    return (false);
+  }
   String bigString = F("https://" SHEET_SERVER "/macros/s/");
   {
     String GKey = jobGetConfigStr(F("gkey"));
@@ -43,7 +43,7 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonParam
     //  HTTPClient http;  //Declare an object of class HTTPClient
     // !!! TODO get a set of valid root certificate for google !!!!
     wifiSecure.setInsecure(); //the magic line, use with caution  !!! certificate not checked
-    D_println(MyEvents.freeRam() + 00);
+ //   D_println(MyEvents.freeRam() + 00);
 
     http.begin(wifiSecure, bigString); //Specify request destination
     //aUri = "";  // clear memory
@@ -82,7 +82,7 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonParam
     }
 
     bigString = http.getString();   //Get the request response payload
-    D_println(MyEvents.freeRam() + 1);
+    //D_println(MyEvents.freeRam() + 1);
     http.end();   //Close connection (restore 22K of ram)
   } //clear string and http memory
   D_println(MyEvents.freeRam() + 04);
@@ -101,21 +101,21 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonParam
     return (false);
   }
 
-  // localzone de la sheet pour l'ajustement heure hiver ete
-  if (JSON.typeof(jsonPayload["timezone"]) == F("number") ) {
-    timeZone = (int)jsonPayload["timezone"];
-    //!! todo pushevent timezone changed
-  }
-  // version des donnée de la feuille pour mettre a jour les données
-  if (JSON.typeof(jsonPayload["baseindex"]) == F("number") ) {
-    uint16_t baseIndex = (int)jsonPayload["baseindex"];
-    if ( localBaseIndex != baseIndex ) {
-      gsheetBaseIndex = baseIndex;
-      D_println(gsheetBaseIndex);
-    }
-    D_println(jsonPayload["baseindex"]);
-  }
-  //  D_println( niceDisplayTime(jsonData["timestamp"]) );
+//  // localzone de la sheet pour l'ajustement heure hiver ete
+//  if (JSON.typeof(jsonPayload["timezone"]) == F("number") ) {
+//    timeZone = (int)jsonPayload["timezone"];
+//    //!! todo pushevent timezone changed
+//  }
+//  // version des donnée de la feuille pour mettre a jour les données
+//  if (JSON.typeof(jsonPayload["baseindex"]) == F("number") ) {
+//    uint16_t baseIndex = (int)jsonPayload["baseindex"];
+//    if ( localBaseIndex != baseIndex ) {
+//      gsheetBaseIndex = baseIndex;
+//      D_println(gsheetBaseIndex);
+//    }
+//    D_println(jsonPayload["baseindex"]);
+//  }
+//  //  D_println( niceDisplayTime(jsonData["timestamp"]) );
   JSONVar answer = jsonPayload["answer"];  // cant grab object from the another not new object
   jsonParam = answer;                    // so memory use is temporary duplicated here
   D_println(MyEvents.freeRam() + 001);
@@ -125,7 +125,7 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonParam
 
 }
 
-
+// encode optimisé pour le json
 String encodeUri(const String aUri) {
   String answer = "";
   String specialChar = F(".-~_{}[],;:\"\\");
