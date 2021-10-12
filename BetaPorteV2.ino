@@ -137,10 +137,12 @@ bool     badgePresent = false;
 bool     WiFiConnected = false;
 bool     lowPowerAllowed = false;
 bool     lowPowerActive = false;
+
 time_t   currentTime;
 int8_t   timeZone = -2;  //les heures sont toutes en localtimes
 uint16_t localBaseIndex = 0;    //version de la derniere GSheet en flash
 uint16_t gsheetBaseIndex = 0;   //version de la gsheet actuelle
+uint16_t gsheetIndex = 0;       // position de la lecture en cours
 String   currentMessage;        // Message deuxieme ligne de l'afficheur
 JSONVar  jsonUserInfo;          // array des info GSheet du badge detecté
 bool     configErr = false;
@@ -438,10 +440,11 @@ void loop() {
     // relecture de la Gsheet : liste des badge et plage horaire
     case evReadGSheet: {
         Serial.println(F("evReadGSheet"));
-        // marque la version comme lue au moins un fois
-        if ( jobMarkIndexReadGSheet() && jobReadBadgesGSheet() ) {
-          localBaseIndex = gsheetBaseIndex;  // mise a jour de l'index base local
+        if ( jobReadBadgesGSheet() ) {
+//          localBaseIndex = gsheetBaseIndex;  // mise a jour de l'index base local
           D_println(localBaseIndex);
+          D_println(gsheetBaseIndex);
+          D_println(gsheetIndex);
         } else {
           Serial.println("Erreur lecture Gsheet Badge");
         }

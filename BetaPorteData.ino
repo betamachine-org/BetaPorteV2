@@ -31,7 +31,7 @@
 // si la baseIndex n'est pas a jour on lance un evReadGsheet
 
 bool jobCheckGSheet()    {
-  Serial.println(F("jobCheckGSheet"));
+  Serial.print(F("jobCheckGSheet"));
   if (!WiFiConnected) return false;
 
   JSONVar jsonData;
@@ -43,31 +43,44 @@ bool jobCheckGSheet()    {
 
   if (localBaseIndex != gsheetBaseIndex) {
     Serial.println(F("demande de relecture des données GSheet"));
-    MyEvents.pushDelayEvent(10 * 1000, evReadGSheet); // reread data
+    MyEvents.pushDelayEvent(10 * 1000, evReadGSheet); // reread data from 0
   }
   return true;
 }
 
-// mark la base comme lu sur la version actuelle
-bool jobMarkIndexReadGSheet()    {
-  Serial.println(F("jobMarkIndexReadGSheet"));
-  if (!WiFiConnected) return false;
-
-  JSONVar jsonData;
-  if (!dialWithGoogle(nodeName, "mark", jsonData)) {
-    Serial.println(F("Erreur acces GSheet"));
-    MyEvents.pushDelayEvent(1 * 3600 * 1000, evCheckGSheet); // recheck in 1 hours
-    return false;
-  }
-  return true;
-}
+//// mark la base comme lu sur la version actuelle
+//bool jobMarkIndexReadGSheet()    {
+//  Serial.println(F("jobMarkIndexReadGSheet"));
+//  if (!WiFiConnected) return false;
+//
+//  JSONVar jsonData;
+//  if (!dialWithGoogle(nodeName, "mark", jsonData)) {
+//    Serial.println(F("Erreur acces GSheet"));
+//    MyEvents.pushDelayEvent(1 * 3600 * 1000, evCheckGSheet); // recheck in 1 hours
+//    return false;
+//  }
+//  return true;
+//}
 
 
 // lecture des badges puis ecriture sur la flash fichier badges.json
+// la lecture est faire par paquet de 50
+//
 bool jobReadBadgesGSheet() {
-  Serial.println(F("jobReadBadgesGSheeet"));
   D_println(MyEvents.freeRam() + 01);
+
+  Serial.print(F("jobReadBadgesGSheeet at "));
+  Serial.println(gsheetIndex);
+  if (gsheetIndex == 0) {
+    MyLittleFS.remove(F("/badges.tmp"));  // raz le fichier temp
+  }
+
   JSONVar jsonData;
+  jsonData["first"] = gsheetIndex;
+  gsheetIndex = 0;  // start from 0 if error
+  jsonData["max"] = 50;
+
+  if (!WiFiConnected) return false;
   if (!dialWithGoogle(nodeName, "getBadges", jsonData)) return (false);
   uint16_t first = (int)jsonData["first"];
   uint16_t len = (int)jsonData["len"];
@@ -79,16 +92,15 @@ bool jobReadBadgesGSheet() {
   D_println(eof);
   D_println(MyEvents.freeRam() + 02);
 
-  File aFile = MyLittleFS.open(F("/badges.json"), "w");
+  File aFile = MyLittleFS.open(F("/badges.tmp"), "a");
   if (!aFile) return false;
-  {
+  if (first == 1) {
     JSONVar jsonHeader;
     jsonHeader["baseindex"] = gsheetBaseIndex;
     jsonHeader["timestamp"] = currentTime;
     jsonHeader["badgenumber"] = total;
     aFile.println(JSON.stringify(jsonHeader));
     D_println(MyEvents.freeRam() + 03);
-
   }
   D_println(MyEvents.freeRam() + 04);
   for (int N = 0 ; N < len ; N++ ) {
@@ -106,7 +118,7 @@ bool jobReadBadgesGSheet() {
     Serial.println(" ");
   }
   aFile.close();
-  aFile = MyLittleFS.open(F("/badges.json"), "r");
+  aFile = MyLittleFS.open(F("/badges.tmp"), "r");
   if (!aFile) {
     D_println(F("TW: no saved config .conf !!!! "));
     return (false);
@@ -115,6 +127,17 @@ bool jobReadBadgesGSheet() {
   D_println(aString);  //aString => '{"baseindex":19,"timestamp":1633712861,"badgenumber":5}
 
   aFile.close();
+  if (!eof) {
+    // il reste des badges a lire on relance une lecture dans 5 secondes
+    gsheetIndex = first + len;
+    MyEvents.pushDelayEvent(10000, evReadGSheet);
+  } else {
+    MyLittleFS.remove(F("/badges.json"));
+    MyLittleFS.rename(F("/badges.tmp"), F("/badges.json"));
+  }
+
+
+
   D_println(MyEvents.freeRam() + 05);
 
   return (true);
@@ -163,15 +186,16 @@ bool jobCheckBadge(const String aUUID) {
     return (false);
   }
   int badgeNumber = jsonHeader["badgenumber"];
-  //D_println(badgeNumber);
+  D_println(badgeNumber);
   int N = 0;
   while (N < badgeNumber ) {
     aString = aFile.readStringUntil('\n');
+  //  D_println(aString);
     JSONVar jsonLine = JSON.parse(aString);
     if (JSON.typeof(jsonLine) != F("array")) break;
     if ( jsonLine[0] == aUUID) {
       Serial.print(F("Match "));
-      D_println((const char*)jsonLine[1]);
+       D_println((const char*)jsonLine[1]);
       jsonUserInfo = jsonLine;
       aFile.close();
       return (true);
