@@ -1,8 +1,8 @@
 function doGet(parametres) {
   try {
-    var localTime = new Date();  // local Time in excel format
-    var timestamp = unixLocalTime(localTime);   // local time in unix format
-    var timezone = localTime.getTimezoneOffset() / 60;
+    //var timeStamp = new Date();  // javascript date 
+    //var timestamp = unixLocalTime(localTime);   // local time in unix format
+    //var timezone = localTime.getTimezoneOffset() / 60;
 
     var node = parametres.parameter.node;       // identificateur unique de la device emetrice ex : node01
     if (!node) throw 'bad device';  // doesnt use node 
@@ -12,16 +12,17 @@ function doGet(parametres) {
     var eventJSON = {
       'status': false,
       'message': 'Error ' + error,
-      //'timestamp' : timestamp
     }
     return ContentService.createTextOutput(JSON.stringify(eventJSON)).setMimeType(ContentService.MimeType.JSON);
   }
 
   // minimum de parametre valide  on enregistre l'action dans la page 'Row_Data'
   // SpreadsheetApp.getActiveSpreadsheet().getSheetByName('NAME').getRange('A1').setValue(aValue);
+  var date = new Date();  // javascript date 
+
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('RowData');
   var newRow = sheet.getLastRow() + 1;
-  var values = [[timestamp, localTime, node, action, '']];
+  var values = [[date, node, action, parametres.parameter.json, '']];
   sheet.getRange(newRow, 1, 1, 5).setValues(values);
   // indique la version de la base
   var range = SpreadsheetApp.getActiveSpreadsheet().getRangeByName('BaseInfo');
@@ -35,34 +36,34 @@ function doGet(parametres) {
     'status': true,
     'message': 'Ok',
     'action': action,
-    'timestamp': timestamp,
-    'timezone': timezone,
-    'baseindex': baseIndex,
   }
 
+  // retourne le timestamp, la time zone, la base index
   if (action == 'check') {
+     var timeStamp = unixLocalTime(date);   // local time in unix format
+     var timeZone = date.getTimezoneOffset() / 60;
+
+    var result = {
+      'timestamp': timeStamp,
+      'timezone': timeZone,
+      'baseindex': baseIndex,
+    }
+
+    eventJSON.answer = result;
+    sheet.getRange(newRow, 6).setValue('baseIndex=' + baseIndex + ' timeZone=' + timeZone);
     sheet.getRange(newRow, 5).setValue('Ok');
     return ContentService.createTextOutput(JSON.stringify(eventJSON)).setMimeType(ContentService.MimeType.JSON);
   }
-  //if (action == 'mark') {
-  //   var range = SpreadsheetApp.getActiveSpreadsheet().getRangeByName('BaseInfo');
-  //   var values = range.getValues();
-  //   values[1][0]=values[0][0];
-  //   range.setValues(values);
-  //  
+
+
+  //if (action == 'getBaseInfo') {
+  //  result = SpreadsheetApp.getActiveSpreadsheet().getRangeByName('BaseInfo').getValues();
+  //  result[0][1] = unixLocalTime(result[0][1]);
+  //  result[1][1] = unixLocalTime(result[1][1]);
+  //  eventJSON.answer = result;
   //  sheet.getRange(newRow, 5).setValue('Ok');
   //  return ContentService.createTextOutput(JSON.stringify(eventJSON)).setMimeType(ContentService.MimeType.JSON);
   //}
-
-
-  if (action == 'getBaseInfo') {
-    result = SpreadsheetApp.getActiveSpreadsheet().getRangeByName('BaseInfo').getValues();
-    result[0][1] = unixLocalTime(result[0][1]);
-    result[1][1] = unixLocalTime(result[1][1]);
-    eventJSON.answer = result;
-    sheet.getRange(newRow, 5).setValue('Ok');
-    return ContentService.createTextOutput(JSON.stringify(eventJSON)).setMimeType(ContentService.MimeType.JSON);
-  }
 
 
   if (action == 'getPlagesHoraire') {
@@ -75,6 +76,8 @@ function doGet(parametres) {
   if (action == 'getBadges') {
     // get max(=10) badges from first(=1)
     var paramJson = parametres.parameter.json;        // first=xxxx  max=xxxx
+    
+
     var first = 1;
     var max = 10;
     // get obtional parameters
@@ -102,6 +105,10 @@ function doGet(parametres) {
     totalBadges = sheetBadges.getLastRow() - 1;
     var len = max;
     if (first - 1 + len > totalBadges) len = totalBadges - first + 1;
+
+    sheet.getRange(newRow, 6).setValue(len + ' badges (' + first + '-' + (first + len - 1) + ')');
+
+
     var badges;
     if (len > 0) {
       badges = sheetBadges.getRange(first + 1, 1, len, 6).getValues();
