@@ -64,6 +64,7 @@ enum tUserEventCode {
   evBadgeOut,           // Sortie du badge
   evCheckGSheet,        // simple check de la base normalement toute les 6 heures (5 minutes apres un acces)
   evReadGSheet,         // demande de lecture de la gsheet (mmise a jour liste des badges)
+  evSendHisto,
   // evenement action
   doReset,
 };
@@ -413,6 +414,10 @@ void loop() {
           lcd.println(F("Bonjour ..."));
           String pseudo = (const char*)jsonUserInfo[1];
           lcd.println(pseudo);
+          JSONVar jsonParam;
+          jsonParam["info"] = (String)F("Ok");
+          jsonParam["UUID"] = UUID;
+          writeHisto(F("badge"), jsonParam);
           //delay(200);
 
         } else {
@@ -421,12 +426,10 @@ void loop() {
           lcd.setCursor(0, 0);
           lcd.println(F("Bonjour ..."));
           lcd.println("Badge inconnu");
-          JSONVar jsonData;
-          String txt = F("Badge invalide ");
-          txt += UUID;
-          jsonData["info"] = txt;
-          dialWithGoogle(nodeName, "writeInfo", jsonData);
-
+          JSONVar jsonParam;
+          jsonParam["info"] = (String)F("inconnu");
+          jsonParam["UUID"] = UUID;
+          writeHisto(F("badge"), jsonParam);
         }
 
       }
@@ -448,11 +451,13 @@ void loop() {
         } else {
           Serial.println("Erreur lecture Gsheet Badge");
         }
-        //MyEvents.removeDelayEvent(evCheckGSheet); // recheck in 6 hours
       }
       break;
-
-
+    case evSendHisto: {
+        Serial.println(F("evSendHisto"));
+        doJobSendHisto();
+      }
+      break;
     case doReset:
       helperReset();
       break;
@@ -495,11 +500,11 @@ void loop() {
     case evInChar: {
         if (MyDebug.trackTime < 2) {
           char aChar = MyKeyboard.inputChar;
-//          if (isPrintable(aChar)) {
-//            D_println(aChar);
-//          } else {
-//            D_println(int(aChar));
-//          }
+          //          if (isPrintable(aChar)) {
+          //            D_println(aChar);
+          //          } else {
+          //            D_println(int(aChar));
+          //          }
         }
         switch (MyKeyboard.inputChar)
         {

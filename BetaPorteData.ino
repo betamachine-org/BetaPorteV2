@@ -33,11 +33,11 @@
 bool jobCheckGSheet()    {
   Serial.println(F("jobCheckGSheet"));
   if (!WiFiConnected) return false;
-  MyEvents.pushDelayEvent(1 * 3600 * 1000, evCheckGSheet); // recheck in 1 hours
+  
   JSONVar jsonData;
   if (!dialWithGoogle(nodeName, "check", jsonData)) {
     Serial.println(F("Erreur acces GSheet"));
-
+    MyEvents.pushDelayEvent(1 * 3600 * 1000, evCheckGSheet); // recheck in 1 hours
     return false;
   }
   uint16_t baseIndex = (int)jsonData["baseindex"];
@@ -45,23 +45,12 @@ bool jobCheckGSheet()    {
     gsheetBaseIndex = baseIndex;
     Serial.println(F("demande de relecture des données GSheet"));
     MyEvents.pushDelayEvent(10 * 1000, evReadGSheet); // reread data from 0
+  } else {
+    // all ok re check in 6 hours
+    MyEvents.pushDelayEvent(6 * 3600 * 1000, evCheckGSheet); // recheck in 6 hours
   }
   return true;
 }
-
-//// mark la base comme lu sur la version actuelle
-//bool jobMarkIndexReadGSheet()    {
-//  Serial.println(F("jobMarkIndexReadGSheet"));
-//  if (!WiFiConnected) return false;
-//
-//  JSONVar jsonData;
-//  if (!dialWithGoogle(nodeName, "mark", jsonData)) {
-//    Serial.println(F("Erreur acces GSheet"));
-//    MyEvents.pushDelayEvent(1 * 3600 * 1000, evCheckGSheet); // recheck in 1 hours
-//    return false;
-//  }
-//  return true;
-//}
 
 
 // lecture des badges puis ecriture sur la flash fichier badges.json
@@ -97,7 +86,7 @@ bool jobReadBadgesGSheet() {
   if (baseIndex != gsheetBaseIndex) {
     Serial.println(F("Abort lecture : new baseIndex"));
     gsheetBaseIndex = baseIndex;
-    return(false);
+    return (false);
   }
   File aFile = MyLittleFS.open(F("/badges.tmp"), "a");
   if (!aFile) return false;
@@ -154,31 +143,31 @@ bool jobReadBadgesGSheet() {
   return (true);
 }
 
-//// lecture de la version de la base sur la flash fichier badges.json
-//bool jobGetBaseIndex() {
-//  File aFile = MyLittleFS.open(F("/badges.json"), "r");
-//  if (!aFile) return (false);
-//
-//  String aString = aFile.readStringUntil('\n');
-//  aFile.close();
-//  D_println(aString);  //aString => '{"baseindex":19,"timestamp":1633712861,"badgenumber":5}
-//
-//  JSONVar jsonHeader = JSON.parse(aString);
-//  if (JSON.typeof(jsonHeader) != F("object")) return (false);
-//
-//  // super check json data for "status" is a bool true  to avoid foolish data then supose all json data are ok.
-//  if (!jsonHeader.hasOwnProperty("baseindex") || JSON.typeof(jsonHeader["baseindex"]) != F("number") ) {
-//    return (false);
-//  }
-//  localBaseIndex = (int)jsonHeader["baseindex"];
-//  gsheetBaseIndex = localBaseIndex;
-//  D_println(localBaseIndex);
-//
-//
-//
-//  return (true);
-//
-//}
+// lecture de la version de la base sur la flash fichier badges.json
+bool jobGetBaseIndex() {
+  File aFile = MyLittleFS.open(F("/badges.json"), "r");
+  if (!aFile) return (false);
+
+  String aString = aFile.readStringUntil('\n');
+  aFile.close();
+  D_println(aString);  //aString => '{"baseindex":19,"timestamp":1633712861,"badgenumber":5}
+
+  JSONVar jsonHeader = JSON.parse(aString);
+  if (JSON.typeof(jsonHeader) != F("object")) return (false);
+
+  // super check json data for "status" is a bool true  to avoid foolish data then supose all json data are ok.
+  if (!jsonHeader.hasOwnProperty("baseindex") || JSON.typeof(jsonHeader["baseindex"]) != F("number") ) {
+    return (false);
+  }
+  localBaseIndex = (int)jsonHeader["baseindex"];
+  gsheetBaseIndex = localBaseIndex;
+  D_println(localBaseIndex);
+
+
+
+  return (true);
+
+}
 
 
 
@@ -212,8 +201,6 @@ bool jobCheckBadge(const String aUUID) {
       return (true);
 
     }
-
-
     N++;
   }
 
@@ -223,6 +210,27 @@ bool jobCheckBadge(const String aUUID) {
   return (false);
 
 }
+
+void writeHisto(const String aAction, JSONVar &jsonData) {
+  jsonData["timestamp"] = currentTime;
+  String jsonHisto = JSON.stringify(jsonData);
+  D_println(jsonHisto);
+  //myObject["x"] = undefined;  remove an object from json
+  File aFile = MyLittleFS.open(F("/histo.txt"), "a+");
+  if (!aFile) return;
+  aFile.print(aAction);
+  aFile.print(',');
+  aFile.println(jsonHisto);
+  aFile.close();
+  MyEvents.pushDelayEvent(5 * 60 * 1000, evSendHisto); // send histo in 5 minutes
+
+}
+
+void doJobSendHisto() {
+  File aFile = MyLittleFS.open(F("/histo.txt"), "r");
+  if (!aFile) return;
+}
+
 
 //get a value of a config key
 String jobGetConfigStr(const String aKey) {
