@@ -159,15 +159,12 @@ void setup() {
   MyEvents.begin();
 
   D_println(WiFi.getMode());
-  // This exemple supose a WiFi connection so if we are not WIFI_STA mode we force it
+  // normaly not needed
   if (WiFi.getMode() != WIFI_STA) {
-    Serial.println(F("!!! Force WiFi to STA mode !!!  should be done only ONCE even if we power off "));
+    Serial.println(F("!!! Force WiFi to STA mode !!!"));
     WiFi.mode(WIFI_STA);
-
     //WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   }
-
-
 
   Serial.println(F("Bonjour ...."));
 
@@ -199,10 +196,8 @@ void setup() {
     lcd.setCursor(0, 1);
     lcd.print(F(LCD_CLREOL "Erreur NFC"));
     fatalError(2);
-
   }
-
-  Serial.println(F("NFC Module Ok."));
+  // Serial.println(F("NFC Module Ok."));
 
   if (!MyLittleFS.begin()) {
     Serial.println(F("erreur MyLittleFS"));
@@ -213,7 +208,6 @@ void setup() {
   if (!getRTCMemory()) {
     savedRTCmemory.actualTimestamp = 0;
   }
-
   // little trick to leave timeStatus to timeNotSet
   // TODO: see with https://github.com/PaulStoffregen/Time to find a way to say timeNeedsSync
   adjustTime(savedRTCmemory.actualTimestamp);
@@ -414,22 +408,15 @@ void loop() {
           lcd.println(F("Bonjour ..."));
           String pseudo = (const char*)jsonUserInfo[1];
           lcd.println(pseudo);
-          JSONVar jsonParam;
-          jsonParam["info"] = (String)F("Ok");
-          jsonParam["UUID"] = UUID;
-          writeHisto(F("badge"), jsonParam);
-          //delay(200);
-
+          writeHisto("badge ok",UUID);
+          
         } else {
           delay(200);
           beep( 444, 400);
           lcd.setCursor(0, 0);
           lcd.println(F("Bonjour ..."));
           lcd.println("Badge inconnu");
-          JSONVar jsonParam;
-          jsonParam["info"] = (String)F("inconnu");
-          jsonParam["UUID"] = UUID;
-          writeHisto(F("badge"), jsonParam);
+          writeHisto("badge inconnu",UUID);
         }
 
       }
@@ -455,7 +442,7 @@ void loop() {
       break;
     case evSendHisto: {
         Serial.println(F("evSendHisto"));
-        doJobSendHisto();
+        JobSendHisto();
       }
       break;
     case doReset:

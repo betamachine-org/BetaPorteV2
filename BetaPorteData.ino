@@ -33,7 +33,7 @@
 bool jobCheckGSheet()    {
   Serial.println(F("jobCheckGSheet"));
   if (!WiFiConnected) return false;
-  
+
   JSONVar jsonData;
   if (!dialWithGoogle(nodeName, "check", jsonData)) {
     Serial.println(F("Erreur acces GSheet"));
@@ -199,36 +199,62 @@ bool jobCheckBadge(const String aUUID) {
       jsonUserInfo = jsonLine;
       aFile.close();
       return (true);
-
     }
     N++;
   }
-
-
-
   aFile.close();
   return (false);
 
 }
 
-void writeHisto(const String aAction, JSONVar &jsonData) {
-  jsonData["timestamp"] = currentTime;
+void writeHisto(const String aAction, const String aInfo) {
+  MyLittleFS.remove(F("/histo.txt"));  // raz le fichier temp
+  JSONVar jsonData;
+  jsonData["action"] = aAction;
+  jsonData["info"] = aInfo;
   String jsonHisto = JSON.stringify(jsonData);
   D_println(jsonHisto);
   //myObject["x"] = undefined;  remove an object from json
-  File aFile = MyLittleFS.open(F("/histo.txt"), "a+");
+  File aFile = MyLittleFS.open(F("/histo.json"), "a+");
   if (!aFile) return;
-  aFile.print(aAction);
-  aFile.print(',');
   aFile.println(jsonHisto);
   aFile.close();
-  MyEvents.pushDelayEvent(5 * 60 * 1000, evSendHisto); // send histo in 5 minutes
-
+  MyEvents.pushDelayEvent(0.2 * 60 * 1000, evSendHisto); // send histo in 5 minutes
 }
 
-void doJobSendHisto() {
-  File aFile = MyLittleFS.open(F("/histo.txt"), "r");
-  if (!aFile) return;
+void JobSendHisto() {
+  File aFile = MyLittleFS.open(F("/histo.json"), "r");
+  if (!aFile || !aFile.available() ) return;
+  aFile.setTimeout(1);
+  JSONVar jsonData;
+  for (uint8_t N = 0; N < 10 ; N++) {
+    if (!aFile.available()) break;
+    String aLine = aFile.readStringUntil('\n');
+    //D_println(aLine);
+    JSONVar jsonLine = JSON.parse(aLine);
+    jsonData[N] = jsonLine;
+  }
+  D_println(JSON.stringify(jsonData));
+
+  // sendto google
+  if (!aFile.available()) {
+    aFile.close();
+    MyLittleFS.remove(F("/histo.json"));
+    Serial.println("clear histo");
+    return;
+  }
+  File bFile = MyLittleFS.open(F("/histo.tmp"), "w");
+  if (!aFile ) return;
+  while ( aFile.available() ) {
+    String aLine = aFile.readStringUntil('\n');
+    bFile.println(aLine);
+  }
+  aFile.close();
+  bFile.close();
+  MyLittleFS.remove(F("/histo.json"));
+  MyLittleFS.rename(F("/histo.tmp"), F("/histo.json"));
+  MyEvents.pushDelayEvent(1 * 60 * 1000, evSendHisto); // send histo in 5 minutes
+  Serial.println("more histo to send");
 }
 
 
