@@ -254,8 +254,8 @@ void loop() {
     case evInit:
       Serial.println("Init");
       jobGetBaseIndex();
+      writeHisto(F("boot"),"");
       MyEvents.pushDelayEvent(1000, evCheckBadge); // arme la lecture du badge
-
       break;
 
 
@@ -408,15 +408,15 @@ void loop() {
           lcd.println(F("Bonjour ..."));
           String pseudo = (const char*)jsonUserInfo[1];
           lcd.println(pseudo);
-          writeHisto("badge ok",UUID);
+          writeHisto(F("badge ok"),UUID);
           
         } else {
           delay(200);
           beep( 444, 400);
           lcd.setCursor(0, 0);
           lcd.println(F("Bonjour ..."));
-          lcd.println("Badge inconnu");
-          writeHisto("badge inconnu",UUID);
+          lcd.println(F("Badge inconnu"));
+          writeHisto(F("badge inconnu"),UUID);
         }
 
       }

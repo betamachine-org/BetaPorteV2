@@ -210,6 +210,7 @@ bool jobCheckBadge(const String aUUID) {
 void writeHisto(const String aAction, const String aInfo) {
   MyLittleFS.remove(F("/histo.txt"));  // raz le fichier temp
   JSONVar jsonData;
+  jsonData["timestamp"] = currentTime;
   jsonData["action"] = aAction;
   jsonData["info"] = aInfo;
   String jsonHisto = JSON.stringify(jsonData);
@@ -230,11 +231,16 @@ void JobSendHisto() {
   for (uint8_t N = 0; N < 10 ; N++) {
     if (!aFile.available()) break;
     String aLine = aFile.readStringUntil('\n');
-    //D_println(aLine);
+    //D_println(aLine);  //'{"action":"badge ok","info":"0E3F0FFA"}
     JSONVar jsonLine = JSON.parse(aLine);
-    jsonData[N] = jsonLine;
+    jsonData["liste"][N] = jsonLine;
   }
-  D_println(JSON.stringify(jsonData));
+  //D_println(JSON.stringify(jsonData));
+  if (!dialWithGoogle(nodeName, "histo", jsonData))  {
+    MyEvents.pushDelayEvent(1 * 60 * 1000, evSendHisto); // retry in one hour
+    aFile.close();
+    return;
+  }
 
   // sendto google
   if (!aFile.available()) {
@@ -243,8 +249,13 @@ void JobSendHisto() {
     Serial.println("clear histo");
     return;
   }
+  // cut file histo.tmp avec une copie en .tmp
+  // todo: utiliser seek pour eviter la double copie ?
   File bFile = MyLittleFS.open(F("/histo.tmp"), "w");
-  if (!aFile ) return;
+  if (!aFile ) {
+    aFile.close();
+    return;
+  }
   while ( aFile.available() ) {
     String aLine = aFile.readStringUntil('\n');
     bFile.println(aLine);

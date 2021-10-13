@@ -14,7 +14,7 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonParam
   Serial.print(aAction);
   Serial.println('\'');
  D_println(MyEvents.freeRam() + 000);
-  if (MyEvents.freeRam() < 44000) {
+  if (MyEvents.freeRam() < 43000) {
     Serial.println(F("https need more memory"));
     return (false);
   }
@@ -31,13 +31,14 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonParam
     bigString += F("&action=");
     bigString += encodeUri(aAction);;
 
-    //  D_println(JSON.typeof(jsonParam));
+    D_println(JSON.typeof(jsonParam));
     // les parametres eventuels sont passées en JSON dans le parametre '&json='
     if (JSON.typeof(jsonParam) == F("object") ) {
       bigString += F("&json=");
+      D_println(JSON.stringify(jsonParam));
       bigString += encodeUri(JSON.stringify(jsonParam));
     }
-    //  D_println(aUri);
+    
 
     WiFiClientSecure wifiSecure;
     //  HTTPClient http;  //Declare an object of class HTTPClient
