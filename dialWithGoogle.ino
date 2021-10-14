@@ -8,13 +8,13 @@
 // need about 30K of ram !!!!!! WiFiClientSecure
 bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonParam) {
   // (global) HTTPClient http;  //Declare an object of class HTTPClient
-   Serial.print(F("Dial With gSheet as '"));
+  Serial.print(F("Dial With gSheet as '"));
   Serial.print(aNode);
   Serial.print(':');
   Serial.print(aAction);
   Serial.println('\'');
- D_println(MyEvents.freeRam() + 000);
-  if (MyEvents.freeRam() < 43000) {
+  D_println(MyEvents.freeRam() + 000);
+  if (MyEvents.freeRam() < 41000) {
     Serial.println(F("https need more memory"));
     return (false);
   }
@@ -38,17 +38,18 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonParam
       D_println(JSON.stringify(jsonParam));
       bigString += encodeUri(JSON.stringify(jsonParam));
     }
-    
-
+    D_println(MyEvents.freeRam() + 0001);
+    jsonParam = undefined;
+    D_println(MyEvents.freeRam() + 0002);
     WiFiClientSecure wifiSecure;
     //  HTTPClient http;  //Declare an object of class HTTPClient
     // !!! TODO get a set of valid root certificate for google !!!!
     wifiSecure.setInsecure(); //the magic line, use with caution  !!! certificate not checked
- //   D_println(MyEvents.freeRam() + 00);
+    //   D_println(MyEvents.freeRam() + 00);
 
     http.begin(wifiSecure, bigString); //Specify request destination
-    //aUri = "";  // clear memory
-
+    bigString = "";  // clear memory
+    
 
     // define requested header
     const char * headerKeys[] = {"location"} ;
@@ -56,6 +57,7 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonParam
     http.collectHeaders(headerKeys, numberOfHeaders);
     D_println(MyEvents.freeRam() + 01);
     int httpCode = http.GET();//Send the request  (gram 22K of ram)
+    D_println(httpCode);
     D_println(MyEvents.freeRam() + 02);
     int antiLoop = 0;
     while (httpCode == 302 && antiLoop++ < 3) {
@@ -66,6 +68,7 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonParam
       http.collectHeaders(headerKeys, numberOfHeaders);
 
       httpCode = http.GET();//Send the request
+      D_println(httpCode);
     }
     bigString = "";
     //    if (httpCode < 0) {
@@ -102,21 +105,21 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonParam
     return (false);
   }
 
-//  // localzone de la sheet pour l'ajustement heure hiver ete
-//  if (JSON.typeof(jsonPayload["timezone"]) == F("number") ) {
-//    timeZone = (int)jsonPayload["timezone"];
-//    //!! todo pushevent timezone changed
-//  }
-//  // version des donnée de la feuille pour mettre a jour les données
-//  if (JSON.typeof(jsonPayload["baseindex"]) == F("number") ) {
-//    uint16_t baseIndex = (int)jsonPayload["baseindex"];
-//    if ( localBaseIndex != baseIndex ) {
-//      gsheetBaseIndex = baseIndex;
-//      D_println(gsheetBaseIndex);
-//    }
-//    D_println(jsonPayload["baseindex"]);
-//  }
-//  //  D_println( niceDisplayTime(jsonData["timestamp"]) );
+  //  // localzone de la sheet pour l'ajustement heure hiver ete
+  //  if (JSON.typeof(jsonPayload["timezone"]) == F("number") ) {
+  //    timeZone = (int)jsonPayload["timezone"];
+  //    //!! todo pushevent timezone changed
+  //  }
+  //  // version des donnée de la feuille pour mettre a jour les données
+  //  if (JSON.typeof(jsonPayload["baseindex"]) == F("number") ) {
+  //    uint16_t baseIndex = (int)jsonPayload["baseindex"];
+  //    if ( localBaseIndex != baseIndex ) {
+  //      gsheetBaseIndex = baseIndex;
+  //      D_println(gsheetBaseIndex);
+  //    }
+  //    D_println(jsonPayload["baseindex"]);
+  //  }
+  //  //  D_println( niceDisplayTime(jsonData["timestamp"]) );
   JSONVar answer = jsonPayload["answer"];  // cant grab object from the another not new object
   jsonParam = answer;                    // so memory use is temporary duplicated here
   D_println(MyEvents.freeRam() + 001);

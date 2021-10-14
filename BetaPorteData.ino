@@ -96,6 +96,7 @@ bool jobReadBadgesGSheet() {
     jsonHeader["timestamp"] = currentTime;
     jsonHeader["badgenumber"] = total;
     aFile.println(JSON.stringify(jsonHeader));
+    D_println(currentTime);
     D_println(MyEvents.freeRam() + 03);
   }
   D_println(MyEvents.freeRam() + 04);
@@ -208,7 +209,7 @@ bool jobCheckBadge(const String aUUID) {
 }
 
 void writeHisto(const String aAction, const String aInfo) {
-  MyLittleFS.remove(F("/histo.txt"));  // raz le fichier temp
+  //MyLittleFS.remove(F("/histo.txt"));  // raz le fichier temp
   JSONVar jsonData;
   jsonData["timestamp"] = currentTime;
   jsonData["action"] = aAction;
@@ -223,18 +224,23 @@ void writeHisto(const String aAction, const String aInfo) {
   MyEvents.pushDelayEvent(0.2 * 60 * 1000, evSendHisto); // send histo in 5 minutes
 }
 
+
+//
 void JobSendHisto() {
+  if (!WiFiConnected) return;
   File aFile = MyLittleFS.open(F("/histo.json"), "r");
   if (!aFile || !aFile.available() ) return;
   aFile.setTimeout(1);
   JSONVar jsonData;
-  for (uint8_t N = 0; N < 10 ; N++) {
+  for (uint8_t N = 0; N < 5 ; N++) {
     if (!aFile.available()) break;
     String aLine = aFile.readStringUntil('\n');
     //D_println(aLine);  //'{"action":"badge ok","info":"0E3F0FFA"}
     JSONVar jsonLine = JSON.parse(aLine);
     jsonData["liste"][N] = jsonLine;
   }
+
+  // sendto google
   //D_println(JSON.stringify(jsonData));
   if (!dialWithGoogle(nodeName, "histo", jsonData))  {
     MyEvents.pushDelayEvent(1 * 60 * 1000, evSendHisto); // retry in one hour
@@ -242,7 +248,6 @@ void JobSendHisto() {
     return;
   }
 
-  // sendto google
   if (!aFile.available()) {
     aFile.close();
     MyLittleFS.remove(F("/histo.json"));

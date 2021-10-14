@@ -211,6 +211,7 @@ void setup() {
   // little trick to leave timeStatus to timeNotSet
   // TODO: see with https://github.com/PaulStoffregen/Time to find a way to say timeNeedsSync
   adjustTime(savedRTCmemory.actualTimestamp);
+  currentTime = savedRTCmemory.actualTimestamp;
 
   // recuperation de la config dans config.json
   nodeName = jobGetConfigStr(F("nodename"));
@@ -254,8 +255,8 @@ void loop() {
     case evInit:
       Serial.println("Init");
       jobGetBaseIndex();
-      writeHisto(F("boot"),"");
-      MyEvents.pushDelayEvent(1000, evCheckBadge); // arme la lecture du badge
+      writeHisto(F("boot"), "");
+      MyEvents.pushDelayEvent(5 * 1000, evCheckBadge); // lecture badges dans 5 secondes
       break;
 
 
@@ -265,28 +266,6 @@ void loop() {
 
 
     case ev10Hz: {
-        // check for connection to local WiFi
-        static uint8_t oldWiFiStatus = 99;
-        uint8_t  WiFiStatus = WiFi.status();
-
-        if (oldWiFiStatus != WiFiStatus) {
-          oldWiFiStatus = WiFiStatus;
-          D_println(WiFiStatus);
-          //    WL_IDLE_STATUS      = 0,
-          //    WL_NO_SSID_AVAIL    = 1,
-          //    WL_SCAN_COMPLETED   = 2,
-          //    WL_CONNECTED        = 3,
-          //    WL_CONNECT_FAILED   = 4,
-          //    WL_CONNECTION_LOST  = 5,
-          //    WL_DISCONNECTED     = 6
-          WiFiConnected = (WiFiStatus == WL_CONNECTED);
-          if (WiFiConnected) {
-            setSyncProvider(getWebTime);
-            setSyncInterval(6 * 3600);
-            MyEvents.pushDelayEvent(10 * 1000, evCheckGSheet);
-          }
-          D_println(WiFiConnected);
-        }
 
         // check and updaate LCD
         if (lcdOk) {
@@ -340,27 +319,58 @@ void loop() {
       }
       break;
 
-    case ev1Hz:
+    case ev1Hz: {
 
-      // If we are not connected we warn the user every 30 seconds that we need to update credential
-      currentTime = now();
-      savedRTCmemory.actualTimestamp = currentTime;  // save time in RTC memory
-      saveRTCmemory();
-      if ( !WiFiConnected && second() % 30 ==  15) {
-        // every 30 sec
-        Serial.print(F("module non connecté au Wifi local "));
-        D_println(WiFi.SSID());
-        Serial.println(F("taper WIFI= pour configurer le Wifi"));
+        // check for connection to local WiFi  1 fois par seconde c'est suffisant
+        static uint8_t oldWiFiStatus = 99;
+        uint8_t  WiFiStatus = WiFi.status();
+        if (oldWiFiStatus != WiFiStatus) {
+          oldWiFiStatus = WiFiStatus;
+          D_println(WiFiStatus);
+          //    WL_IDLE_STATUS      = 0,
+          //    WL_NO_SSID_AVAIL    = 1,
+          //    WL_SCAN_COMPLETED   = 2,
+          //    WL_CONNECTED        = 3,
+          //    WL_CONNECT_FAILED   = 4,
+          //    WL_CONNECTION_LOST  = 5,
+          //    WL_DISCONNECTED     = 6
+          WiFiConnected = (WiFiStatus == WL_CONNECTED);
+          static bool wasConnected = WiFiConnected;
+          if (wasConnected != WiFiConnected) {
+            wasConnected = WiFiConnected;
+            if (WiFiConnected) {
+              setSyncProvider(getWebTime);
+              setSyncInterval(6 * 3600);
+              MyEvents.pushDelayEvent(5 * 60 * 1000, evCheckGSheet);  // controle de la base dans 5 minutes
+            }
+            D_println(WiFiConnected);
+            writeHisto( WiFiConnected ? F("wifi Connected") : F("wifi lost"), WiFi.SSID() );
+          }
+        }
+
+
+        // If we are not connected we warn the user every 30 seconds that we need to update credential
+        currentTime = now();
+        savedRTCmemory.actualTimestamp = currentTime;  // save time in RTC memory
+        saveRTCmemory();
+
+
+
+        if ( !WiFiConnected && second() % 30 ==  15) {
+          // every 30 sec
+          Serial.print(F("module non connecté au Wifi local "));
+          D_println(WiFi.SSID());
+          Serial.println(F("taper WIFI= pour configurer le Wifi"));
+        }
+
+        // controle retours LCD
+        if (!lcdOk && checkI2C(LCD_I2CADR)) {
+          lcdOk = true;
+          Serial.println(F("LCD ok"));
+          lcd.clear();
+          lcdRedraw = true;
+        }
       }
-
-      if (!lcdOk && checkI2C(LCD_I2CADR)) {
-        lcdOk = true;
-
-        Serial.print(F("LCD ok"));
-        lcd.clear();
-        lcdRedraw = true;
-      }
-
 
       break;
 
@@ -408,15 +418,15 @@ void loop() {
           lcd.println(F("Bonjour ..."));
           String pseudo = (const char*)jsonUserInfo[1];
           lcd.println(pseudo);
-          writeHisto(F("badge ok"),UUID);
-          
+          writeHisto(F("badge ok"), UUID);
+
         } else {
           delay(200);
           beep( 444, 400);
           lcd.setCursor(0, 0);
           lcd.println(F("Bonjour ..."));
           lcd.println(F("Badge inconnu"));
-          writeHisto(F("badge inconnu"),UUID);
+          writeHisto(F("badge inconnu"), UUID);
         }
 
       }
