@@ -247,7 +247,13 @@ void JobSendHisto() {
     aFile.close();
     return;
   }
-
+  uint16_t baseIndex = (int)jsonData["baseindex"];
+  if ( localBaseIndex != baseIndex ) {
+    gsheetBaseIndex = baseIndex;
+    Serial.println(F("demande de relecture des données GSheet"));
+    MyEvents.pushDelayEvent(60 * 1000, evReadGSheet); // reread data from 0
+  }
+  
   if (!aFile.available()) {
     aFile.close();
     MyLittleFS.remove(F("/histo.json"));
