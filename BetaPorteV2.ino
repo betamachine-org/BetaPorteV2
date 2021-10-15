@@ -30,9 +30,11 @@
 
 *************************************************/
 
+// Definition des constantes pour les IO
 #include "ESP8266.h"
 
 #define APP_NAME "BetaPorte V2.0"
+
 
 //
 /* Evenements du Manager (voir EventsManager.h)
@@ -57,8 +59,8 @@ enum tUserEventCode {
   evBP0 = 100,      // low = low power allowed
   evLed0,
   evLowPower,
+  evCloseDoor,      // timer desactiver le relai
   evBlinkClock,     // clignotement pendule
-  //evLcdRedraw,  //update LCD
   evCheckBadge,  //timer lecture etat badge
   evBadgeIn,            // Arrivee du badge
   evBadgeOut,           // Sortie du badge
@@ -79,6 +81,7 @@ enum tUserEventCode {
 //  MyKeyboard genere un evenement evChar a char caractere recu et un evenement evString a chaque ligne recue
 //  MyDebug permet sur reception d'un "T" sur l'entrée Serial d'afficher les infos de charge du CPU
 
+#define pinBP0 BP0_PIN
 #include <BetaEvents.h>
 
 
@@ -151,6 +154,13 @@ bool     configErr = false;
 void setup() {
 
   Serial.begin(115200);
+
+  //porte fermée = gache active
+  pinMode(GACHE_PIN, OUTPUT);
+  digitalWrite(GACHE_PIN, GACHE_ACTIVE);   //Porte fermée
+
+
+
   Serial.println(F("\r\n\n" APP_NAME));
 
   //WiFi.forceSleepBegin();  // this do  a WiFiMode OFF  !!! 21ma
@@ -338,6 +348,7 @@ void loop() {
           static bool wasConnected = WiFiConnected;
           if (wasConnected != WiFiConnected) {
             wasConnected = WiFiConnected;
+            MyLed0.setFrequence(WiFiConnected ? 1 : 2);
             if (WiFiConnected) {
               setSyncProvider(getWebTime);
               setSyncInterval(6 * 3600);
@@ -418,6 +429,7 @@ void loop() {
           lcd.println(F("Bonjour ..."));
           String pseudo = (const char*)jsonUserInfo[1];
           lcd.println(pseudo);
+          jobOpenDoor();
           writeHisto(F("badge ok"), UUID);
 
         } else {
@@ -455,6 +467,12 @@ void loop() {
         JobSendHisto();
       }
       break;
+
+    case evCloseDoor: {
+        jobCloseDoor();
+      }
+      break;
+
     case doReset:
       helperReset();
       break;
@@ -626,8 +644,16 @@ void loop() {
 
 
 // helpers
+void jobOpenDoor() {
+  digitalWrite(GACHE_PIN, !GACHE_ACTIVE);   //ouvre la porte
+  MyLed0.setFrequence(5);
+  MyEvents.pushDelayEvent(GACHE_TEMPO, evCloseDoor);
+}
 
-
+void jobCloseDoor() {
+  digitalWrite(GACHE_PIN, GACHE_ACTIVE);   //Porte fermée
+  MyLed0.setFrequence(WiFiConnected ? 1 : 2);
+}
 
 // Check I2C
 bool checkI2C(const uint8_t i2cAddr)
@@ -666,7 +692,7 @@ void fatalError(const uint8_t error) {
 
 
 void beep(const uint16_t frequence, const uint16_t duree) {
-  tone(BeepPin, frequence, duree);
+  tone(BEEP_PIN, frequence, duree);
 }
 
 void jobActionDetected() {
