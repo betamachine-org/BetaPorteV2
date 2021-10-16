@@ -120,8 +120,6 @@ int  multi = 0; // nombre de clic rapide
 bool  lcdOk = false;
 bool  lcdRedraw = false;
 char lcdTransmitSign = '!';
-//enum displayMode_t { dmInfo,  dmMAX };
-//displayMode_t  displayMode = dmInfo;
 
 // rtc memory to keep date
 //struct __attribute__((packed))
@@ -135,7 +133,7 @@ struct  {
 
 
 // Variable d'application locale
-String   nodeName  = "";    // nom de  la device (a configurer avec NODE=)"
+String   nodeName = "NODE_NAME";    // nom de  la device (a configurer avec NODE=)"
 //String   GKey = "";         // clef google Sheet (a configurer avec GKEY=)"
 bool     badgePresent = false;
 bool     WiFiConnected = false;
@@ -147,9 +145,11 @@ int8_t   timeZone = -2;  //les heures sont toutes en localtimes
 uint16_t localBaseIndex = 0;    //version de la derniere GSheet en flash
 uint16_t gsheetBaseIndex = 0;   //version de la gsheet actuelle
 uint16_t gsheetIndex = 0;       // position de la lecture en cours
-String   currentMessage;        // Message deuxieme ligne de l'afficheur
-JSONVar  jsonUserInfo;          // array des info GSheet du badge detecté
+String   currentMessage = "................";        // Message deuxieme ligne de l'afficheur
+//JSONVar  jsonUserInfo;          // array des info GSheet du badge detecté
 bool     configErr = false;
+//enum badgeMode_t { bmOk, bmInvalide, bmPerime, bmBadHoraire bmMAX };
+//badgeMode_t badgeMode = bmInvalide;
 
 void setup() {
 
@@ -209,6 +209,7 @@ void setup() {
   }
   // Serial.println(F("NFC Module Ok."));
 
+  // System de fichier
   if (!MyLittleFS.begin()) {
     Serial.println(F("erreur MyLittleFS"));
     fatalError(3);
@@ -427,8 +428,8 @@ void loop() {
           Serial.print(F("Badge Ok "));
           lcd.setCursor(0, 0);
           lcd.println(F("Bonjour ..."));
-          String pseudo = (const char*)jsonUserInfo[1];
-          lcd.println(pseudo);
+          
+          lcd.println(currentMessage);
           jobOpenDoor();
           writeHisto(F("badge ok"), UUID);
 
@@ -611,7 +612,7 @@ void loop() {
         sleepOk = !sleepOk;
         D_println(sleepOk);
       }
-      if (MyKeyboard.inputString.equals(F("g0"))) {
+      if (MyKeyboard.inputString.equals(F("CHECK"))) {
         JSONVar jsonData;
         if (!dialWithGoogle(nodeName, F("check"), jsonData)) {
           Serial.println(F("Erreur check"));
@@ -619,23 +620,11 @@ void loop() {
           Serial.println(F("check Ok"));
         }
       }
-      if (MyKeyboard.inputString.equals(F("g3"))) {
-        JSONVar jsonData;
-        jsonData["info"] = "testG3 & test é & ! # ' + \" , . ; € ";
-        if (!dialWithGoogle(nodeName, "writeInfo", jsonData)) {
-          Serial.println("Erreur writeInfo");
-        } else {
-          Serial.println(F("writeInfo Ok"));
-        }
-      }
-
-      if (MyKeyboard.inputString.equals(F("g4"))) {
+ 
+      if (MyKeyboard.inputString.equals(F("READ"))) {
         bool jReadBadgesGSheet = jobReadBadgesGSheet();
         D_println(jReadBadgesGSheet);
       }
-
-
-
       break;
 
 

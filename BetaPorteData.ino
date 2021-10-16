@@ -197,7 +197,8 @@ bool jobCheckBadge(const String aUUID) {
     if ( jsonLine[0] == aUUID) {
       Serial.print(F("Match "));
       D_println((const char*)jsonLine[1]);
-      jsonUserInfo = jsonLine;
+      String pseudo = (const char*)jsonLine[1];
+      currentMessage = pseudo.substring(0,15);
       aFile.close();
       return (true);
     }
@@ -229,8 +230,12 @@ void writeHisto(const String aAction, const String aInfo) {
 void JobSendHisto() {
   if (!WiFiConnected) return;
   File aFile = MyLittleFS.open(F("/histo.json"), "r");
-  if (!aFile || !aFile.available() ) return;
+  if (!aFile) return;
   aFile.setTimeout(1);
+  if (!aFile.available()) {
+    aFile.close();
+    return;
+  }
   JSONVar jsonData;
   for (uint8_t N = 0; N < 5 ; N++) {
     if (!aFile.available()) break;
