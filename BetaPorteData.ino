@@ -226,7 +226,10 @@ void writeHisto(const String aAction, const String aInfo) {
 }
 
 
-//
+// drop an allocated object around 18K !!!!
+//02:34:26.816 -> 12:34:14,CPU=100%,Loop=1,Nill=0,Ram=45880,Frag=44%,MaxMem=18144 Miss:3/0
+//12:34:27.799 -> 12:34:15,CPU=100%,Loop=7,Nill=0,Ram=45880,Frag=31%,MaxMem=25936 Miss:9/0
+
 void JobSendHisto() {
   if (!WiFiConnected) return;
   File aFile = MyLittleFS.open(F("/histo.json"), "r");
