@@ -101,9 +101,6 @@ bool jobReadBadgesGSheet() {
   }
   D_println(MyEvents.freeRam() + 04);
   for (int N = 0 ; N < len ; N++ ) {
-    String aLine = JSON.stringify(jsonData["badges"][N]);
-    D_println(aLine);  //["043826CAAA5C81","Test_01A",1609459200,1640908800,0,"PERM"]
-    aFile.println(aLine);
 
     //    Serial.print(jsonData[N][0]);
     //    Serial.print(" ");
@@ -111,8 +108,22 @@ bool jobReadBadgesGSheet() {
     //    Serial.print(" ");
     //    Serial.print(niceDisplayTime(jsonData[N][2], true));
     //    Serial.print("-");
+    // pour limiter la taille des donnée JSON la date de debut et de fin est transmise 
+    // en nombre de jour depuis 1/1/2000
+    //Entre le 01/01/1970 et le 01/01/2000, il s'est écoulé 10957 jours soit 30 ans.
+
+    time_t aDate = ((time_t)jsonData["badges"][N][2] + 10957) * 24 * 3600;
+    jsonData["badges"][N][2] = aDate;
+
+    aDate = ((time_t)jsonData["badges"][N][3] + 10957) * 24 * 3600;
+    jsonData["badges"][N][3] = aDate;
+    Serial.print(niceDisplayTime(aDate, true));
+    Serial.println(" ");
     Serial.print(niceDisplayTime(jsonData["badges"][N][3], true));
     Serial.println(" ");
+    String aLine = JSON.stringify(jsonData["badges"][N]);
+    D_println(aLine);  //["043826CAAA5C81","Test_01A",1609459200,1640908800,0,"PERM"]
+    aFile.println(aLine);
   }
   aFile.close();
   aFile = MyLittleFS.open(F("/badges.tmp"), "r");
@@ -173,18 +184,19 @@ bool jobGetBaseIndex() {
 
 
 // verification de la validité d'un badge dans la base sur la flash fichier badges.json
-bool jobCheckBadge(const String aUUID) {
+badgeMode_t jobCheckBadge(const String aUUID) {
+  //enum badgeMode_t {bmInvalide, bmBadDate, bmBadTime ,bmOk, bmBaseErreur bmMAX };
   File aFile = MyLittleFS.open(F("/badges.json"), "r");
-  if (!aFile) return (false);
+  if (!aFile) return (bmBaseErreur);
   String aString = aFile.readStringUntil('\n');
 
   //D_println(aString);  //aString => '{"baseindex":19,"timestamp":1633712861,"badgenumber":5}
 
   JSONVar jsonHeader = JSON.parse(aString);
-  if (JSON.typeof(jsonHeader) != F("object")) return (false);
+  if (JSON.typeof(jsonHeader) != F("object")) return (bmBaseErreur);
 
   if (!jsonHeader.hasOwnProperty("badgenumber") || JSON.typeof(jsonHeader["badgenumber"]) != F("number") ) {
-    return (false);
+    return (bmBaseErreur);
   }
   int badgeNumber = jsonHeader["badgenumber"];
   D_println(badgeNumber);
@@ -193,19 +205,29 @@ bool jobCheckBadge(const String aUUID) {
     aString = aFile.readStringUntil('\n');
     //  D_println(aString);
     JSONVar jsonLine = JSON.parse(aString);
-    if (JSON.typeof(jsonLine) != F("array")) break;
-    if ( jsonLine[0] == aUUID) {
+    //jsonLine[0] UUid
+    //jsonLine[1] pseudo
+    //jsonLine[2] date debut en jour
+    //jsonLine[3] date fin en jours 
+    if ( JSON.typeof(jsonLine) == F("array") && jsonLine[0] == aUUID ) {
+      aFile.close();
+      D_println(niceDisplayTime(jsonLine[2]));
+      D_println(niceDisplayTime(currentTime));
+      D_println(niceDisplayTime(jsonLine[3]));
+      if (currentTime < (time_t)jsonLine[2] || currentTime > (time_t)jsonLine[3]) {
+        return (bmBadDate);
+      }
       Serial.print(F("Match "));
       D_println((const char*)jsonLine[1]);
       String pseudo = (const char*)jsonLine[1];
-      currentMessage = pseudo.substring(0,15);
-      aFile.close();
-      return (true);
+      currentMessage = pseudo.substring(0, 15);
+
+      return (bmOk);
     }
     N++;
   }
   aFile.close();
-  return (false);
+  return (bmInvalide);
 
 }
 
@@ -261,7 +283,7 @@ void JobSendHisto() {
     Serial.println(F("demande de relecture des données GSheet"));
     MyEvents.pushDelayEvent(60 * 1000, evReadGSheet); // reread data from 0
   }
-  
+
   if (!aFile.available()) {
     aFile.close();
     MyLittleFS.remove(F("/histo.json"));

@@ -147,6 +147,8 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonParam
 
 }
 
+#define Hex2Char(X) (char)((X) + ((X) <= 9 ? '0' : ('A' - 10)))
+
 // encode optimisé pour le json
 String encodeUri(const String aUri) {
   String answer = "";

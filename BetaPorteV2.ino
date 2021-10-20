@@ -48,7 +48,7 @@
   evInString,
 */
 
-#define Hex2Char(X) (char)((X) + ((X) <= 9 ? '0' : ('A' - 10)))
+
 #define NOT_A_DATE_YEAR   2000
 
 // Liste des evenements specifique a ce projet
@@ -97,8 +97,8 @@ LiquidCrystal_PCF8574 lcd(LCD_I2CADR); // set the LCD address
 
 // Objet d'interface pour le lecteur de badge
 #include "BadgeNfc_PN532_I2C.h"
-// Taille maxide la chaine RFID en lecture
-#define MAXRFIDSIZE 100
+// Taille maxide la chaine RFID en lecture (not used in this version)
+#define MAXRFIDSIZE 50
 BadgeNfc_PN532_I2C lecteurBadge;   // instance du lecteur de badge
 
 // littleFS
@@ -148,7 +148,7 @@ uint16_t gsheetIndex = 0;       // position de la lecture en cours
 String   currentMessage = "................";        // Message deuxieme ligne de l'afficheur
 //JSONVar  jsonUserInfo;          // array des info GSheet du badge detecté
 bool     configErr = false;
-//enum badgeMode_t { bmOk, bmInvalide, bmPerime, bmBadHoraire bmMAX };
+enum badgeMode_t {bmOk, bmBadDate, bmBadTime, bmInvalide, bmBaseErreur, bmMAX };
 //badgeMode_t badgeMode = bmInvalide;
 
 void setup() {
@@ -424,11 +424,12 @@ void loop() {
         //delay(500);
         String UUID = lecteurBadge.getUUIDTag();
         D_println(UUID);
-        if (jobCheckBadge(UUID)) {
-          Serial.print(F("Badge Ok "));
+        badgeMode_t badgeMode = jobCheckBadge(UUID);
+        if (badgeMode == bmOk) {
+          Serial.println(F("Badge Ok "));
           lcd.setCursor(0, 0);
           lcd.println(F("Bonjour ..."));
-          
+
           lcd.println(currentMessage);
           jobOpenDoor();
           writeHisto(F("badge ok"), UUID);
@@ -436,10 +437,13 @@ void loop() {
         } else {
           delay(200);
           beep( 444, 400);
+          String aString = F("Badge err : ");
+          aString += badgeMode;
+          Serial.println(aString);
           lcd.setCursor(0, 0);
           lcd.println(F("Bonjour ..."));
-          lcd.println(F("Badge inconnu"));
-          writeHisto(F("badge inconnu"), UUID);
+          lcd.println(aString);
+          writeHisto(aString, UUID);
         }
 
       }
@@ -620,7 +624,7 @@ void loop() {
           Serial.println(F("check Ok"));
         }
       }
- 
+
       if (MyKeyboard.inputString.equals(F("READ"))) {
         bool jReadBadgesGSheet = jobReadBadgesGSheet();
         D_println(jReadBadgesGSheet);
