@@ -21,19 +21,21 @@
 
 
   History
-    V2.0 (30/10/2021)
+    V2.0 (30/09/2021)
     - Full rebuild from BetaPorte V1.3 (15/03/2020)
 
   // TODO : gerer le changement d'horaire
   // TODO : gerer le changement nodeName (nom de l'unitée)
   !! todo push timezone changed
+    V2.0.1 (29/10/2021)
+    Correction pour betaEvents V2.2
 
 *************************************************/
 
 // Definition des constantes pour les IO
 #include "ESP8266.h"
 
-#define APP_NAME "BetaPorte V2.0"
+#define APP_NAME "BetaPorte V2.0.1"
 
 
 //
@@ -75,13 +77,13 @@ enum tUserEventCode {
 
 // instance betaEvent
 
-//  une instance "Events" avec un poussoir "MyBP0" une LED "Led0" un clavier "Keyboard"
+//  une instance "Events" avec un poussoir "BP0" une LED "Led0" un clavier "Keyboard"
 //  MyBP0 genere un evenement evBP0 a chaque pression le poussoir connecté sur pinBP0
 //  Led0 genere un evenement evLed0 a chaque clignotement de la led precablée sur la platine
 //  Keyboard genere un evenement evChar a char caractere recu et un evenement evString a chaque ligne recue
 //  Debug permet sur reception d'un "T" sur l'entrée Serial d'afficher les infos de charge du CPU
 
-#define pinBP0 BP0_PIN
+//#define pinBP0 BP0_PIN
 #include <BetaEvents.h>
 
 
@@ -253,7 +255,7 @@ void setup() {
     delay(500);
     beep( 1047, 500);
   }
-  D_println(Events.freeRam());
+  D_println(helperFreeRam());
 }
 
 String niceDisplayTime(const time_t time, bool full = false);
@@ -267,7 +269,7 @@ void loop() {
       Serial.println("Init");
       jobGetBaseIndex();
       writeHisto(F("boot"), "");
-      Events.pushDelay(5 * 1000, evCheckBadge); // lecture badges dans 5 secondes
+      Events.delayedPush(5 * 1000, evCheckBadge); // lecture badges dans 5 secondes
       break;
 
 
@@ -310,7 +312,7 @@ void loop() {
               lcd.setCursor(0, 1);
               lcd.print(currentMessage);
               lcd.print(LCD_CLREOL);
-              Events.pushDelay(300, evBlinkClock, false);
+              Events.delayedPush(300, evBlinkClock, false);
 
 
               lcdRedraw = false;
@@ -326,7 +328,7 @@ void loop() {
         lcd.setCursor(13, 0);
         lcd.print( show ? lcdTransmitSign : ' ');
         show = !show;
-        Events.pushDelay(show ? 250 : 750, evBlinkClock, show);
+        Events.delayedPush(show ? 250 : 750, evBlinkClock, show);
       }
       break;
 
@@ -354,7 +356,7 @@ void loop() {
             if (WiFiConnected) {
               setSyncProvider(getWebTime);
               setSyncInterval(6 * 3600);
-              Events.pushDelay(5 * 60 * 1000, evCheckGSheet);  // controle de la base dans 5 minutes
+              Events.delayedPush(5 * 60 * 1000, evCheckGSheet);  // controle de la base dans 5 minutes
             }
             D_println(WiFiConnected);
             writeHisto( WiFiConnected ? F("wifi Connected") : F("wifi lost"), WiFi.SSID() );
@@ -390,7 +392,7 @@ void loop() {
     // Detection changement d'etat badge
     case evCheckBadge: {
         int rateCheckBadge = 300; //lowPower  ? 2000 : 250;
-        Events.pushDelay(rateCheckBadge, evCheckBadge); // je reessaye plus tard
+        Events.delayedPush(rateCheckBadge, evCheckBadge); // je reessaye plus tard
         // un badge est il present ?
         bool etatBadge = lecteurBadge.badgePresent();
         if (etatBadge == badgePresent) {
@@ -415,8 +417,8 @@ void loop() {
     // Arrivee d'un badge
     case evBadgeIn: {
         beep( 1047, 200);
-        Events.pushDelay(2 * 1000, evCheckBadge); // on laisse du temps a l'application pour lire et transmettre au moins une fois
-        Events.pushDelay(5 * 60 * 1000, evCheckGSheet); // on controle la base dans 5 minutes
+        Events.delayedPush(2 * 1000, evCheckBadge); // on laisse du temps a l'application pour lire et transmettre au moins une fois
+        Events.delayedPush(5 * 60 * 1000, evCheckGSheet); // on controle la base dans 5 minutes
 
         //leBadge = sBadge();
         // Affichage sur l'ecran
@@ -611,7 +613,7 @@ void loop() {
         Events.push(doReset);
       }
       if (Keyboard.inputString.equals(F("FREE"))) {
-        D_println(Events.freeRam());
+        D_println(helperFreeRam());
       }
       if (Keyboard.inputString.equals("S")) {
         sleepOk = !sleepOk;
@@ -641,7 +643,7 @@ void loop() {
 void jobOpenDoor() {
   digitalWrite(GACHE_PIN, !GACHE_ACTIVE);   //ouvre la porte
   Led0.setFrequence(5);
-  Events.pushDelay(GACHE_TEMPO, evCloseDoor);
+  Events.delayedPush(GACHE_TEMPO, evCloseDoor);
 }
 
 void jobCloseDoor() {
@@ -696,7 +698,7 @@ void jobActionDetected() {
   }
   if (lowPowerAllowed) {
     Serial.println(F("low power in 5 minutes"));
-    Events.pushDelay(1 * 60 * 1000, evLowPower, true);
+    Events.delayedPush(1 * 60 * 1000, evLowPower, true);
   }
 }
 
