@@ -37,17 +37,17 @@ bool jobCheckGSheet()    {
   JSONVar jsonData;
   if (!dialWithGoogle(nodeName, "check", jsonData)) {
     Serial.println(F("Erreur acces GSheet"));
-    MyEvents.pushDelayEvent(1 * 3600 * 1000, evCheckGSheet); // recheck in 1 hours
+    Events.pushDelay(1 * 3600 * 1000, evCheckGSheet); // recheck in 1 hours
     return false;
   }
   uint16_t baseIndex = (int)jsonData["baseindex"];
   if ( localBaseIndex != baseIndex ) {
     gsheetBaseIndex = baseIndex;
     Serial.println(F("demande de relecture des données GSheet"));
-    MyEvents.pushDelayEvent(10 * 1000, evReadGSheet); // reread data from 0
+    Events.pushDelay(10 * 1000, evReadGSheet); // reread data from 0
   } else {
     // all ok re check in 6 hours
-    MyEvents.pushDelayEvent(6 * 3600 * 1000, evCheckGSheet); // recheck in 6 hours
+    Events.pushDelay(6 * 3600 * 1000, evCheckGSheet); // recheck in 6 hours
   }
   return true;
 }
@@ -57,8 +57,8 @@ bool jobCheckGSheet()    {
 // la lecture est faire par paquet de 50
 //
 bool jobReadBadgesGSheet() {
-  D_println(MyEvents.freeRam() + 01);
-  MyEvents.pushDelayEvent(15 * 60 * 1000, evCheckGSheet); // recheck in 15 min en cas d'erreur
+  D_println(Events.freeRam() + 01);
+  Events.pushDelay(15 * 60 * 1000, evCheckGSheet); // recheck in 15 min en cas d'erreur
   Serial.print(F("jobReadBadgesGSheeet at "));
   Serial.println(gsheetIndex);
   if (gsheetIndex == 0) {
@@ -82,7 +82,7 @@ bool jobReadBadgesGSheet() {
   D_println(first);
   D_println(len);
   D_println(eof);
-  D_println(MyEvents.freeRam() + 02);
+  D_println(Events.freeRam() + 02);
   if (baseIndex != gsheetBaseIndex) {
     Serial.println(F("Abort lecture : new baseIndex"));
     gsheetBaseIndex = baseIndex;
@@ -97,9 +97,9 @@ bool jobReadBadgesGSheet() {
     jsonHeader["badgenumber"] = total;
     aFile.println(JSON.stringify(jsonHeader));
     D_println(currentTime);
-    D_println(MyEvents.freeRam() + 03);
+    D_println(Events.freeRam() + 03);
   }
-  D_println(MyEvents.freeRam() + 04);
+  D_println(Events.freeRam() + 04);
   for (int N = 0 ; N < len ; N++ ) {
 
     //    Serial.print(jsonData[N][0]);
@@ -138,11 +138,11 @@ bool jobReadBadgesGSheet() {
   if (!eof) {
     // il reste des badges a lire on relance une lecture dans 5 secondes
     gsheetIndex = first + len;
-    MyEvents.pushDelayEvent(10000, evReadGSheet);
+    Events.pushDelay(10000, evReadGSheet);
   } else {
     MyLittleFS.remove(F("/badges.json"));
     MyLittleFS.rename(F("/badges.tmp"), F("/badges.json"));
-    MyEvents.pushDelayEvent(0.6 * 3600 * 1000, evCheckGSheet); // recheck in 6 hours
+    Events.pushDelay(6 * 3600 * 1000, evCheckGSheet); // recheck in 6 hours
     localBaseIndex = baseIndex;
     Serial.print(F("New base "));
     D_println(localBaseIndex);
@@ -150,7 +150,7 @@ bool jobReadBadgesGSheet() {
 
 
 
-  D_println(MyEvents.freeRam() + 05);
+  D_println(Events.freeRam() + 05);
 
   return (true);
 }
@@ -244,7 +244,7 @@ void writeHisto(const String aAction, const String aInfo) {
   if (!aFile) return;
   aFile.println(jsonHisto);
   aFile.close();
-  MyEvents.pushDelayEvent(0.2 * 60 * 1000, evSendHisto); // send histo in 5 minutes
+  Events.pushDelay(0.2 * 60 * 1000, evSendHisto); // send histo in 5 minutes
 }
 
 
@@ -273,7 +273,7 @@ void JobSendHisto() {
   // sendto google
   //D_println(JSON.stringify(jsonData));
   if (!dialWithGoogle(nodeName, "histo", jsonData))  {
-    MyEvents.pushDelayEvent(1 * 60 * 1000, evSendHisto); // retry in one hour
+    Events.pushDelay(1 * 60 * 1000, evSendHisto); // retry in one hour
     aFile.close();
     return;
   }
@@ -281,7 +281,7 @@ void JobSendHisto() {
   if ( localBaseIndex != baseIndex ) {
     gsheetBaseIndex = baseIndex;
     Serial.println(F("demande de relecture des données GSheet"));
-    MyEvents.pushDelayEvent(60 * 1000, evReadGSheet); // reread data from 0
+    Events.pushDelay(60 * 1000, evReadGSheet); // reread data from 0
   }
 
   if (!aFile.available()) {
@@ -305,7 +305,7 @@ void JobSendHisto() {
   bFile.close();
   MyLittleFS.remove(F("/histo.json"));
   MyLittleFS.rename(F("/histo.tmp"), F("/histo.json"));
-  MyEvents.pushDelayEvent(1 * 60 * 1000, evSendHisto); // send histo in 5 minutes
+  Events.pushDelay(1 * 60 * 1000, evSendHisto); // send histo in 5 minutes
   Serial.println("more histo to send");
 }
 

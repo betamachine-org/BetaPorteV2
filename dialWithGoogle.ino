@@ -13,8 +13,8 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonParam
   Serial.print(':');
   Serial.print(aAction);
   Serial.println('\'');
-  D_println(MyEvents.freeRam() + 000);
-  if (MyEvents.freeRam() < 41000) {
+  D_println(Events.freeRam() + 000);
+  if (Events.freeRam() < 41000) {
     Serial.println(F("https need more memory"));
     return (false);
   }
@@ -35,17 +35,17 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonParam
     // les parametres eventuels sont passées en JSON dans le parametre '&json='
     if (JSON.typeof(jsonParam) == F("object") ) {
       bigString += F("&json=");
-      D_println(JSON.stringify(jsonParam));
+      //D_println(JSON.stringify(jsonParam));
       bigString += encodeUri(JSON.stringify(jsonParam));
     }
-    D_println(MyEvents.freeRam() + 0001);
+    D_println(Events.freeRam() + 0001);
     jsonParam = undefined;
-    D_println(MyEvents.freeRam() + 0002);
+    //D_println(Events.freeRam() + 0002);
     WiFiClientSecure wifiSecure;
     //  HTTPClient http;  //Declare an object of class HTTPClient
     // !!! TODO get a set of valid root certificate for google !!!!
     wifiSecure.setInsecure(); //the magic line, use with caution  !!! certificate not checked
-    //   D_println(MyEvents.freeRam() + 00);
+    //   D_println(Events.freeRam() + 00);
 
     http.begin(wifiSecure, bigString); //Specify request destination
     bigString = "";  // clear memory
@@ -55,7 +55,7 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonParam
     const char * headerKeys[] = {"location"} ;
     const size_t numberOfHeaders = 1;
     http.collectHeaders(headerKeys, numberOfHeaders);
-    D_println(MyEvents.freeRam() + 01);
+    //D_println(Events.freeRam() + 01);
     int httpCode = http.GET();//Send the request  (gram 22K of ram)
     
 
@@ -76,12 +76,12 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonParam
 */
     
     D_println(httpCode);
-    D_println(MyEvents.freeRam() + 02);
+    D_println(Events.freeRam() + 02);
     int antiLoop = 0;
     while (httpCode == 302 && antiLoop++ < 3) {
       bigString = http.header(headerKeys[0]);
       // google will give answer in relocation
-      D_println(bigString);
+      //D_println(bigString);
       http.begin(wifiSecure, bigString); //Specify request new destination
       http.collectHeaders(headerKeys, numberOfHeaders);
 
@@ -104,13 +104,13 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonParam
     }
 
     bigString = http.getString();   //Get the request response payload
-    //D_println(MyEvents.freeRam() + 1);
+    //D_println(Events.freeRam() + 1);
     http.end();   //Close connection (restore 22K of ram)
   } //clear string and http memory
-  D_println(MyEvents.freeRam() + 04);
+  D_println(Events.freeRam() + 04);
   D_println(bigString);             //Print the response payload
   JSONVar jsonPayload = JSON.parse(bigString);
-  D_println(MyEvents.freeRam() + 05);
+  //D_println(Events.freeRam() + 05);
   bigString = "";
   if (JSON.typeof(jsonPayload) != F("object")) {
     D_println(JSON.typeof(jsonPayload));
@@ -126,7 +126,7 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonParam
   //  // localzone de la sheet pour l'ajustement heure hiver ete
   //  if (JSON.typeof(jsonPayload["timezone"]) == F("number") ) {
   //    timeZone = (int)jsonPayload["timezone"];
-  //    //!! todo pushevent timezone changed
+  //    //!! todo push timezone changed
   //  }
   //  // version des donnée de la feuille pour mettre a jour les données
   //  if (JSON.typeof(jsonPayload["baseindex"]) == F("number") ) {
@@ -140,7 +140,7 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonParam
   //  //  D_println( niceDisplayTime(jsonData["timestamp"]) );
   JSONVar answer = jsonPayload["answer"];  // cant grab object from the another not new object
   jsonParam = answer;                    // so memory use is temporary duplicated here
-  D_println(MyEvents.freeRam() + 001);
+  D_println(Events.freeRam() + 001);
   return (true);
 
 

@@ -26,7 +26,7 @@
 
   // TODO : gerer le changement d'horaire
   // TODO : gerer le changement nodeName (nom de l'unitée)
-  !! todo pushevent timezone changed
+  !! todo push timezone changed
 
 *************************************************/
 
@@ -38,7 +38,7 @@
 
 //
 /* Evenements du Manager (voir EventsManager.h)
-  evNill = 0,      // No event  about 1 every milisecond but do not use them for delay Use pushDelayEvent(delay,event)
+  evNill = 0,      // No event  about 1 every milisecond but do not use them for delay Use pushDelay(delay,event)
   ev100Hz,         // tick 100HZ    non cumulative (see betaEvent.h)
   ev10Hz,          // tick 10HZ     non cumulative (see betaEvent.h)
   ev1Hz,           // un tick 1HZ   cumulative (see betaEvent.h)
@@ -75,11 +75,11 @@ enum tUserEventCode {
 
 // instance betaEvent
 
-//  une instance "MyEvents" avec un poussoir "MyBP0" une LED "MyLed0" un clavier "MyKeyboard"
+//  une instance "Events" avec un poussoir "MyBP0" une LED "Led0" un clavier "Keyboard"
 //  MyBP0 genere un evenement evBP0 a chaque pression le poussoir connecté sur pinBP0
-//  MyLed0 genere un evenement evLed0 a chaque clignotement de la led precablée sur la platine
-//  MyKeyboard genere un evenement evChar a char caractere recu et un evenement evString a chaque ligne recue
-//  MyDebug permet sur reception d'un "T" sur l'entrée Serial d'afficher les infos de charge du CPU
+//  Led0 genere un evenement evLed0 a chaque clignotement de la led precablée sur la platine
+//  Keyboard genere un evenement evChar a char caractere recu et un evenement evString a chaque ligne recue
+//  Debug permet sur reception d'un "T" sur l'entrée Serial d'afficher les infos de charge du CPU
 
 #define pinBP0 BP0_PIN
 #include <BetaEvents.h>
@@ -166,7 +166,7 @@ void setup() {
   //WiFi.forceSleepBegin();  // this do  a WiFiMode OFF  !!! 21ma
 
   // Start instance
-  MyEvents.begin();
+  Events.begin();
 
   D_println(WiFi.getMode());
   // normaly not needed
@@ -253,21 +253,21 @@ void setup() {
     delay(500);
     beep( 1047, 500);
   }
-  D_println(MyEvents.freeRam());
+  D_println(Events.freeRam());
 }
 
 String niceDisplayTime(const time_t time, bool full = false);
 
 void loop() {
-  MyEvents.getEvent(sleepOk);
-  MyEvents.handleEvent();
-  switch (MyEvents.currentEvent.code)
+  Events.get(sleepOk);
+  Events.handle();
+  switch (Events.code)
   {
     case evInit:
       Serial.println("Init");
       jobGetBaseIndex();
       writeHisto(F("boot"), "");
-      MyEvents.pushDelayEvent(5 * 1000, evCheckBadge); // lecture badges dans 5 secondes
+      Events.pushDelay(5 * 1000, evCheckBadge); // lecture badges dans 5 secondes
       break;
 
 
@@ -305,12 +305,12 @@ void loop() {
               lcd.print(F("   "));
               //lcdTransmitSign = ' ';
               lcd.print(Digit2_str(hour()));
-              lcd.print(':');
+              lcd.print(lcdTransmitSign);
               lcd.print(Digit2_str(minute()));
               lcd.setCursor(0, 1);
               lcd.print(currentMessage);
               lcd.print(LCD_CLREOL);
-              MyEvents.pushDelayEvent(300, evBlinkClock, false);
+              Events.pushDelay(300, evBlinkClock, false);
 
 
               lcdRedraw = false;
@@ -322,11 +322,11 @@ void loop() {
       break;
 
     case evBlinkClock: {
-        bool show = MyEvents.currentEvent.ext;
+        bool show = Events.ext;
         lcd.setCursor(13, 0);
-        lcd.print( show ? ':' : ' ');
+        lcd.print( show ? lcdTransmitSign : ' ');
         show = !show;
-        MyEvents.pushDelayEvent(show ? 250 : 750, evBlinkClock, show);
+        Events.pushDelay(show ? 250 : 750, evBlinkClock, show);
       }
       break;
 
@@ -349,11 +349,12 @@ void loop() {
           static bool wasConnected = WiFiConnected;
           if (wasConnected != WiFiConnected) {
             wasConnected = WiFiConnected;
-            MyLed0.setFrequence(WiFiConnected ? 1 : 2);
+            Led0.setFrequence(WiFiConnected ? 1 : 2);
+            lcdTransmitSign = WiFiConnected ? ':' : '!';
             if (WiFiConnected) {
               setSyncProvider(getWebTime);
               setSyncInterval(6 * 3600);
-              MyEvents.pushDelayEvent(5 * 60 * 1000, evCheckGSheet);  // controle de la base dans 5 minutes
+              Events.pushDelay(5 * 60 * 1000, evCheckGSheet);  // controle de la base dans 5 minutes
             }
             D_println(WiFiConnected);
             writeHisto( WiFiConnected ? F("wifi Connected") : F("wifi lost"), WiFi.SSID() );
@@ -389,7 +390,7 @@ void loop() {
     // Detection changement d'etat badge
     case evCheckBadge: {
         int rateCheckBadge = 300; //lowPower  ? 2000 : 250;
-        MyEvents.pushDelayEvent(rateCheckBadge, evCheckBadge); // je reessaye plus tard
+        Events.pushDelay(rateCheckBadge, evCheckBadge); // je reessaye plus tard
         // un badge est il present ?
         bool etatBadge = lecteurBadge.badgePresent();
         if (etatBadge == badgePresent) {
@@ -407,19 +408,19 @@ void loop() {
         badgePresent = etatBadge;
         D_println(badgePresent);
         jobActionDetected();
-        MyEvents.pushEvent((badgePresent ? evBadgeIn : evBadgeOut)); // Signalement a l'application
+        Events.push((badgePresent ? evBadgeIn : evBadgeOut)); // Signalement a l'application
       }
       break;
 
     // Arrivee d'un badge
     case evBadgeIn: {
         beep( 1047, 200);
-        MyEvents.pushDelayEvent(2 * 1000, evCheckBadge); // on laisse du temps a l'application pour lire et transmettre au moins une fois
-        MyEvents.pushDelayEvent(5 * 60 * 1000, evCheckGSheet); // on controle la base dans 5 minutes
+        Events.pushDelay(2 * 1000, evCheckBadge); // on laisse du temps a l'application pour lire et transmettre au moins une fois
+        Events.pushDelay(5 * 60 * 1000, evCheckGSheet); // on controle la base dans 5 minutes
 
         //leBadge = sBadge();
         // Affichage sur l'ecran
-        //MyEvents.pushEvent(evShowLcd);
+        //Events.push(evShowLcd);
         lcd.clear();
         //delay(500);
         String UUID = lecteurBadge.getUUIDTag();
@@ -483,7 +484,7 @@ void loop() {
       break;
 
     case evLowPower:
-      if (MyEvents.currentEvent.ext) {
+      if (Events.ext) {
         //Serial.println(F("Low Power On"));
         lowPowerActive = true;
         lcd.setBacklight(0);
@@ -503,7 +504,7 @@ void loop() {
 
     // BP0 = detecteur de presence
     case evBP0:
-      switch (MyEvents.currentEvent.ext) {
+      switch (Events.ext) {
         case evxBPDown:
           lowPowerAllowed = true;
           break;
@@ -518,15 +519,15 @@ void loop() {
       break;
 
     case evInChar: {
-        if (MyDebug.trackTime < 2) {
-          char aChar = MyKeyboard.inputChar;
+        if (Debug.trackTime < 2) {
+          char aChar = Keyboard.inputChar;
           //          if (isPrintable(aChar)) {
           //            D_println(aChar);
           //          } else {
           //            D_println(int(aChar));
           //          }
         }
-        switch (MyKeyboard.inputChar)
+        switch (Keyboard.inputChar)
         {
           case '0': delay(10); break;
           case '1': delay(100); break;
@@ -602,21 +603,21 @@ void loop() {
 
 
     case evInString:
-      if (MyDebug.trackTime < 2) {
-        D_println(MyKeyboard.inputString);
+      if (Debug.trackTime < 2) {
+        D_println(Keyboard.inputString);
       }
-      if (MyKeyboard.inputString.equals(F("RESET"))) {
+      if (Keyboard.inputString.equals(F("RESET"))) {
         Serial.println(F("RESET"));
-        MyEvents.pushEvent(doReset);
+        Events.push(doReset);
       }
-      if (MyKeyboard.inputString.equals(F("FREE"))) {
-        D_println(MyEvents.freeRam());
+      if (Keyboard.inputString.equals(F("FREE"))) {
+        D_println(Events.freeRam());
       }
-      if (MyKeyboard.inputString.equals("S")) {
+      if (Keyboard.inputString.equals("S")) {
         sleepOk = !sleepOk;
         D_println(sleepOk);
       }
-      if (MyKeyboard.inputString.equals(F("CHECK"))) {
+      if (Keyboard.inputString.equals(F("CHECK"))) {
         JSONVar jsonData;
         if (!dialWithGoogle(nodeName, F("check"), jsonData)) {
           Serial.println(F("Erreur check"));
@@ -625,7 +626,7 @@ void loop() {
         }
       }
 
-      if (MyKeyboard.inputString.equals(F("READ"))) {
+      if (Keyboard.inputString.equals(F("READ"))) {
         bool jReadBadgesGSheet = jobReadBadgesGSheet();
         D_println(jReadBadgesGSheet);
       }
@@ -639,13 +640,13 @@ void loop() {
 // helpers
 void jobOpenDoor() {
   digitalWrite(GACHE_PIN, !GACHE_ACTIVE);   //ouvre la porte
-  MyLed0.setFrequence(5);
-  MyEvents.pushDelayEvent(GACHE_TEMPO, evCloseDoor);
+  Led0.setFrequence(5);
+  Events.pushDelay(GACHE_TEMPO, evCloseDoor);
 }
 
 void jobCloseDoor() {
   digitalWrite(GACHE_PIN, GACHE_ACTIVE);   //Porte fermée
-  MyLed0.setFrequence(WiFiConnected ? 1 : 2);
+  Led0.setFrequence(WiFiConnected ? 1 : 2);
 }
 
 // Check I2C
@@ -672,10 +673,10 @@ void fatalError(const uint8_t error) {
   for (uint8_t N = 1; N <= 5; N++) {
     for (uint8_t N1 = 1; N1 <= error; N1++) {
       delay(150);
-      MyLed0.setOn(true);
+      Led0.setOn(true);
       beep(988, 100);
       delay(150);
-      MyLed0.setOn(false);
+      Led0.setOn(false);
     }
     delay(500);
   }
@@ -691,11 +692,11 @@ void beep(const uint16_t frequence, const uint16_t duree) {
 void jobActionDetected() {
   if (lowPowerActive) {
     Serial.println(F("Wake from low power"));
-    MyEvents.pushEvent(evLowPower, false);
+    Events.push(evLowPower, false);
   }
   if (lowPowerAllowed) {
     Serial.println(F("low power in 5 minutes"));
-    MyEvents.pushDelayEvent(1 * 60 * 1000, evLowPower, true);
+    Events.pushDelay(1 * 60 * 1000, evLowPower, true);
   }
 }
 
