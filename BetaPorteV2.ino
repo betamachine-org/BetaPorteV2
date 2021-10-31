@@ -34,6 +34,7 @@
 
 // Definition des constantes pour les IO
 #include "ESP8266.h"
+static_assert(sizeof(time_t) == 4, "This version works with time_t 32bit  move back to ESP8266 kernel 2.7.4");
 
 #define APP_NAME "BetaPorte V2.0.1"
 
@@ -145,6 +146,8 @@ bool     lowPowerActive = false;
 time_t   currentTime;
 int8_t   timeZone = -2;  //les heures sont toutes en localtimes
 uint16_t localBaseIndex = 0;    //version de la derniere GSheet en flash
+bool     configOk = true; // global used by getConfig...
+
 uint16_t gsheetBaseIndex = 0;   //version de la gsheet actuelle
 uint16_t gsheetIndex = 0;       // position de la lecture en cours
 String   currentMessage = "................";        // Message deuxieme ligne de l'afficheur
@@ -233,6 +236,17 @@ void setup() {
     configErr = true;
   }
   D_println(nodeName);
+
+  // recuperation de la timezone dans la config
+  timeZone = jobGetConfigInt(F("timezone"));
+  if (!configOk) {
+    timeZone = -2; // par defaut France hivers
+    jobSetConfigInt(F("timezone"), timeZone);
+    Serial.println(F("!!! timezone !!!"));
+  }
+  D_println(timeZone);
+
+
 
   //GKey = jobGetConfigStr(F("gkey"));
   if (jobGetConfigStr(F("gkey")) == "") {

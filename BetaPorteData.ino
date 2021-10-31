@@ -25,6 +25,10 @@
 
 
 *************************************************/
+#define HISTO_FNAME  F("/histo.json")
+#define CONFIG_FNAME F("/config.json")
+
+
 
 // acces minimal a Gsheet
 // si Google n'est pas ok on reessaye dans 1 heure
@@ -108,7 +112,7 @@ bool jobReadBadgesGSheet() {
     //    Serial.print(" ");
     //    Serial.print(niceDisplayTime(jsonData[N][2], true));
     //    Serial.print("-");
-    // pour limiter la taille des donnée JSON la date de debut et de fin est transmise 
+    // pour limiter la taille des donnée JSON la date de debut et de fin est transmise
     // en nombre de jour depuis 1/1/2000
     //Entre le 01/01/1970 et le 01/01/2000, il s'est écoulé 10957 jours soit 30 ans.
 
@@ -208,7 +212,7 @@ badgeMode_t jobCheckBadge(const String aUUID) {
     //jsonLine[0] UUid
     //jsonLine[1] pseudo
     //jsonLine[2] date debut en jour
-    //jsonLine[3] date fin en jours 
+    //jsonLine[3] date fin en jours
     if ( JSON.typeof(jsonLine) == F("array") && jsonLine[0] == aUUID ) {
       aFile.close();
       D_println(niceDisplayTime(jsonLine[2]));
@@ -240,7 +244,7 @@ void writeHisto(const String aAction, const String aInfo) {
   String jsonHisto = JSON.stringify(jsonData);
   D_println(jsonHisto);
   //myObject["x"] = undefined;  remove an object from json
-  File aFile = MyLittleFS.open(F("/histo.json"), "a+");
+  File aFile = MyLittleFS.open(HISTO_FNAME, "a+");
   if (!aFile) return;
   aFile.println(jsonHisto);
   aFile.close();
@@ -254,7 +258,7 @@ void writeHisto(const String aAction, const String aInfo) {
 
 void JobSendHisto() {
   if (!WiFiConnected) return;
-  File aFile = MyLittleFS.open(F("/histo.json"), "r");
+  File aFile = MyLittleFS.open(HISTO_FNAME, "r");
   if (!aFile) return;
   aFile.setTimeout(1);
   if (!aFile.available()) {
@@ -284,9 +288,26 @@ void JobSendHisto() {
     Events.delayedPush(60 * 1000, evReadGSheet); // reread data from 0
   }
 
+  // mise a jour de la time zone
+  time_t aTimeZone = (time_t)jsonData["timezone"];
+  D_println(aTimeZone);
+  if (aTimeZone != timeZone) {
+    writeHisto( F("Old TimeZone"), String(timeZone) );
+    timeZone = aTimeZone;
+    jobSetConfigInt("timezone", timeZone);
+    // force recalculation of time
+    setSyncProvider(getWebTime);
+    currentTime = now();
+    writeHisto( F("New TimeZone"), String(timeZone) );
+  }
+
+
+
+
+
   if (!aFile.available()) {
     aFile.close();
-    MyLittleFS.remove(F("/histo.json"));
+    MyLittleFS.remove(HISTO_FNAME);
     Serial.println("clear histo");
     return;
   }
@@ -303,8 +324,8 @@ void JobSendHisto() {
   }
   aFile.close();
   bFile.close();
-  MyLittleFS.remove(F("/histo.json"));
-  MyLittleFS.rename(F("/histo.tmp"), F("/histo.json"));
+  MyLittleFS.remove(HISTO_FNAME);
+  MyLittleFS.rename(F("/histo.tmp"), HISTO_FNAME);
   Events.delayedPush(1 * 60 * 1000, evSendHisto); // send histo in 5 minutes
   Serial.println("more histo to send");
 }
@@ -313,7 +334,7 @@ void JobSendHisto() {
 //get a value of a config key
 String jobGetConfigStr(const String aKey) {
   String result = "";
-  File aFile = MyLittleFS.open(F("/config.json"), "r");
+  File aFile = MyLittleFS.open(CONFIG_FNAME, "r");
   if (!aFile) return (result);
 
   JSONVar jsonConfig = JSON.parse(aFile.readStringUntil('\n'));
@@ -323,16 +344,51 @@ String jobGetConfigStr(const String aKey) {
   return (result);
 }
 
+
 // set a value of a config key
 //todo : check if config is realy write ?
 bool jobSetConfigStr(const String aKey, const String aValue) {
   // read current config
   JSONVar jsonConfig;  // empry config
-  File aFile = MyLittleFS.open(F("/config.json"), "r");
-  if (aFile) jsonConfig = JSON.parse(aFile.readStringUntil('\n'));
-  aFile.close();
+  File aFile = MyLittleFS.open(CONFIG_FNAME, "r");
+  if (aFile) {
+    jsonConfig = JSON.parse(aFile.readStringUntil('\n'));
+    aFile.close();
+  }
   jsonConfig[aKey] = aValue;
-  aFile = MyLittleFS.open(F("/config.json"), "w");
+  aFile = MyLittleFS.open(CONFIG_FNAME, "w");
+  if (!aFile) return (false);
+  D_println(JSON.stringify(jsonConfig));
+  aFile.println(JSON.stringify(jsonConfig));
+  aFile.close();
+  return (true);
+}
+
+int jobGetConfigInt(const String aKey) {
+  int result = 0;
+  File aFile = MyLittleFS.open(CONFIG_FNAME, "r");
+  if (!aFile) return (result);
+  aFile.setTimeout(5);
+  JSONVar jsonConfig = JSON.parse(aFile.readStringUntil('\n'));
+  aFile.close();
+
+  D_println(JSON.typeof(jsonConfig[aKey]));
+  configOk = JSON.typeof(jsonConfig[aKey]) == F("number");
+  if (configOk ) result = jsonConfig[aKey];
+  return (result);
+}
+
+bool jobSetConfigInt(const String aKey, const int aValue) {
+  // read current config
+  JSONVar jsonConfig;  // empry config
+  File aFile = MyLittleFS.open(CONFIG_FNAME, "r");
+  if (!aFile) {
+    aFile.setTimeout(5);
+    jsonConfig = JSON.parse(aFile.readStringUntil('\n'));
+    aFile.close();
+  }
+  jsonConfig[aKey] = aValue;
+  aFile = MyLittleFS.open(CONFIG_FNAME, "w");
   if (!aFile) return (false);
   D_println(JSON.stringify(jsonConfig));
   aFile.println(JSON.stringify(jsonConfig));
