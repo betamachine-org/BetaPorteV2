@@ -551,67 +551,8 @@ void loop() {
           case '3': delay(300); break;
           case '4': delay(400); break;
           case '5': delay(500); break;
-          case 'N': {
-              Serial.println(F("SETUP NODENAME : 'NODE=nodename"));
-              String aTxt = Serial.readStringUntil('=');
-              if (aTxt != F("ODE")) {
-                aTxt = Serial.readStringUntil('\n');
-                break;
-              }
-              nodeName = Serial.readStringUntil('\n');
-              nodeName.replace("\r", "");
-              nodeName.replace(" ", "_");
-              nodeName.trim();
-              D_println(nodeName);
-              if (nodeName != "") {
-                jobSetConfigStr(F("nodename"), nodeName);
-                delay(1000);
-                helperReset();
-              }
-            }
-            break;
-
-          case 'G': {
-              Serial.println(F("SETUP GKEY : 'GKEY=google sheet key"));
-              String aTxt = Serial.readStringUntil('=');
-              if (aTxt != F("KEY")) {
-                aTxt = Serial.readStringUntil('\n');
-                break;
-              }
-              String GKey = Serial.readStringUntil('\n');
-              GKey.replace("\r", "");
-              GKey.trim();
-              D_println(GKey);
-              if (GKey != "") {
-                jobSetConfigStr(F("gkey"), GKey);
-                delay(1000);
-                helperReset();
-              }
-            }
-            break;
 
 
-          case 'W': {
-              Serial.println(F("SETUP WIFI : 'WIFI=WifiName,password"));
-              String aTxt = Serial.readStringUntil('=');
-              if (aTxt != F("IFI")) {
-                aTxt = Serial.readStringUntil('\n');
-                break;
-              }
-              String ssid = Serial.readStringUntil(',');
-              ssid.trim();
-              Serial.println(ssid);
-              if (ssid != "") {
-                String pass = Serial.readStringUntil('\n');
-                pass.replace("\r", "");
-                pass.trim();
-                Serial.println(pass);
-                bool result = WiFi.begin(ssid, pass);
-                Serial.print(F("WiFi begin "));
-                D_println(result);
-              }
-            }
-            break;
         }
       }
       break;
@@ -622,6 +563,56 @@ void loop() {
       if (Debug.trackTime < 2) {
         D_println(Keyboard.inputString);
       }
+
+      if (Keyboard.inputString.startsWith(F("NODE="))) {
+        Serial.println(F("SETUP NODENAME : 'NODE=nodename'  ( this will reset)"));
+        String aStr = Keyboard.inputString;
+        grabFromStringUntil(aStr, '=');
+        aStr.replace(" ", "_");
+        aStr.trim();
+
+        if (aStr != "") {
+          nodeName = aStr;
+          D_println(nodeName);
+          jobSetConfigStr(F("nodename"), nodeName);
+          delay(1000);
+          helperReset();
+        }
+      }
+
+
+      if (Keyboard.inputString.startsWith(F("GKEY="))) {
+        Serial.println(F("SETUP GKEY : 'GKEY=google sheet key"));
+        String aStr = Keyboard.inputString;
+        grabFromStringUntil(aStr, '=');
+        aStr.trim();
+
+        if (aStr != "") {
+          D_println(aStr);
+          jobSetConfigStr(F("gkey"), aStr);
+        }
+      }
+
+
+
+      if (Keyboard.inputString.startsWith(F("WIFI="))) {
+        Serial.println(F("SETUP WIFI : 'WIFI=WifiName,password"));
+        String aStr = Keyboard.inputString;
+        grabFromStringUntil(aStr, '=');
+        String ssid = grabFromStringUntil(aStr, ',');
+        ssid.trim();
+        D_println(ssid);
+        if (ssid != "") {
+          String pass = aStr;
+          pass.trim();
+          D_println(pass);
+          bool result = WiFi.begin(ssid, pass);
+          Serial.print(F("WiFi begin "));
+          D_println(result);
+        }
+
+      }
+
       if (Keyboard.inputString.equals(F("RESET"))) {
         Serial.println(F("RESET"));
         Events.push(doReset);
@@ -633,6 +624,13 @@ void loop() {
         sleepOk = !sleepOk;
         D_println(sleepOk);
       }
+      if (Keyboard.inputString.equals(F("RAZCONF"))) {
+        Serial.println(F("RAZCONF this will reset"));
+        eraseConfig();
+        delay(1000);
+        helperReset();
+      }
+
       if (Keyboard.inputString.equals(F("CHECK"))) {
         JSONVar jsonData;
         if (!dialWithGoogle(nodeName, F("check"), jsonData)) {
