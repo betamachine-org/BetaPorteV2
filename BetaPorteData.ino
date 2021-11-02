@@ -97,7 +97,7 @@ bool jobReadBadgesGSheet() {
   if (first == 1) {
     JSONVar jsonHeader;
     jsonHeader["baseindex"] = baseIndex;
-    jsonHeader["timestamp"] = currentTime;
+    jsonHeader["timestamp"] = (double)currentTime;
     jsonHeader["badgenumber"] = total;
     aFile.println(JSON.stringify(jsonHeader));
     D_println(currentTime);
@@ -116,16 +116,16 @@ bool jobReadBadgesGSheet() {
     // en nombre de jour depuis 1/1/2000
     //Entre le 01/01/1970 et le 01/01/2000, il s'est écoulé 10957 jours soit 30 ans.
 
-    time_t aDate = ((time_t)jsonData["badges"][N][2] + 10957) * 24 * 3600;
-    jsonData["badges"][N][2] = aDate;
+    time_t aDate = ((double)jsonData["badges"][N][2] + 10957) * 24 * 3600;
+    jsonData["badges"][N][2] = (double)aDate;
 
-    aDate = ((time_t)jsonData["badges"][N][3] + 10957) * 24 * 3600;
-    jsonData["badges"][N][3] = aDate;
+    aDate = ((double)jsonData["badges"][N][3] + 10957) * 24 * 3600;
+    jsonData["badges"][N][3] = (double)aDate;
     Serial.print(niceDisplayTime(aDate, true));
     Serial.println(" ");
-    Serial.print(niceDisplayTime(jsonData["badges"][N][3], true));
+    Serial.print(niceDisplayTime((double)jsonData["badges"][N][3], true));
     Serial.println(" ");
-    String aLine = JSON.stringify(jsonData["badges"][N]);
+    String aLine = JSON.stringify((double)jsonData["badges"][N]);
     D_println(aLine);  //["043826CAAA5C81","Test_01A",1609459200,1640908800,0,"PERM"]
     aFile.println(aLine);
   }
@@ -215,10 +215,10 @@ badgeMode_t jobCheckBadge(const String aUUID) {
     //jsonLine[3] date fin en jours
     if ( JSON.typeof(jsonLine) == F("array") && jsonLine[0] == aUUID ) {
       aFile.close();
-      D_println(niceDisplayTime(jsonLine[2]));
+      D_println(niceDisplayTime((double)jsonLine[2]));
       D_println(niceDisplayTime(currentTime));
-      D_println(niceDisplayTime(jsonLine[3]));
-      if (currentTime < (time_t)jsonLine[2] || currentTime > (time_t)jsonLine[3]) {
+      D_println(niceDisplayTime((double)jsonLine[3]));
+      if (currentTime < (double)jsonLine[2] || currentTime > (double)jsonLine[3]) {
         return (bmBadDate);
       }
       Serial.print(F("Match "));
@@ -238,7 +238,7 @@ badgeMode_t jobCheckBadge(const String aUUID) {
 void writeHisto(const String aAction, const String aInfo) {
   //MyLittleFS.remove(F("/histo.txt"));  // raz le fichier temp
   JSONVar jsonData;
-  jsonData["timestamp"] = currentTime;
+  jsonData["timestamp"] = (double)currentTime;
   jsonData["action"] = aAction;
   jsonData["info"] = aInfo;
   String jsonHisto = JSON.stringify(jsonData);
@@ -289,7 +289,7 @@ void JobSendHisto() {
   }
 
   // mise a jour de la time zone
-  time_t aTimeZone = (time_t)jsonData["timezone"];
+  time_t aTimeZone = (double)jsonData["timezone"];
   D_println(aTimeZone);
   if (aTimeZone != timeZone) {
     writeHisto( F("Old TimeZone"), String(timeZone) );
@@ -339,7 +339,7 @@ String jobGetConfigStr(const String aKey) {
 
   JSONVar jsonConfig = JSON.parse(aFile.readStringUntil('\n'));
   aFile.close();
-  if (JSON.typeof(jsonConfig[aKey]) == F("string") ) result = jsonConfig[aKey];
+  if (JSON.typeof(jsonConfig[aKey]) == F("string") ) result = (const char*)jsonConfig[aKey];
 
   return (result);
 }
@@ -420,4 +420,5 @@ String grabFromStringUntil(String &aString, const char aKey) {
   aString = aString.substring(pos + 1);
   D_println(result);
   D_println(aString);
+  return (result);
 }

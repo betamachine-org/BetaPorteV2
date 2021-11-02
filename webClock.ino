@@ -17,7 +17,7 @@ time_t getWebTime() {
 
   WiFiClient client;
 //  HTTPClient http;  //Declare an object of class HTTPClient
-
+//  http.setTimeout(2000); // 2 Seconds
   http.begin(client, "http://" HTTP_SERVER); //Specify request destination
   // we need date to setup clock so
   const char * headerKeys[] = {"date"} ;

@@ -34,9 +34,9 @@
 
 // Definition des constantes pour les IO
 #include "ESP8266.h"
-static_assert(sizeof(time_t) == 4, "This version works with time_t 32bit  move back to ESP8266 kernel 2.7.4");
+static_assert(sizeof(time_t) == 8, "This version works with time_t 64bit  move to ESP8266 kernel 3.0 or more");
 
-#define APP_NAME "BetaPorte V2.0.1"
+#define APP_NAME "BetaPorte V2.0.2"
 
 
 //
@@ -157,7 +157,7 @@ enum badgeMode_t {bmOk, bmBadDate, bmBadTime, bmInvalide, bmBaseErreur, bmMAX };
 //badgeMode_t badgeMode = bmInvalide;
 
 void setup() {
-
+  enableWiFiAtBootTime();   // obligatoire pour lekernel ESP > 30
   Serial.begin(115200);
 
   //porte fermée = gache active
@@ -180,7 +180,7 @@ void setup() {
     WiFi.mode(WIFI_STA);
     //WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   }
-
+  http.setTimeout(10000); // 10 Seconds
   Serial.println(F("Bonjour ...."));
 
   //Init I2C
@@ -260,8 +260,8 @@ void setup() {
     beep( 880, 500);
     delay(500);
   } else {
-    currentMessage = F("device=");
-    currentMessage += nodeName;
+    //currentMessage = F("device=");
+    currentMessage = nodeName;
     // a beep
     beep( 880, 500);
     delay(500);
