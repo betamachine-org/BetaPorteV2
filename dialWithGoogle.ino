@@ -21,7 +21,7 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonParam
   String bigString = F("https://" SHEET_SERVER "/macros/s/");
   {
     String GKey = jobGetConfigStr(F("gkey"));
-    if (aNode == "" || GKey == "" || aAction == "") return (false);
+    if (aNode.length() == 0 || GKey.length() == 0 || aAction.length() == 0) return (false);
     //bigString = F("https://" SHEET_SERVER "/macros/s/");
     bigString += GKey;
 
@@ -31,7 +31,7 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonParam
     bigString += F("&action=");
     bigString += encodeUri(aAction);;
 
-    D_println(JSON.typeof(jsonParam));
+    //D_println(JSON.typeof(jsonParam));
     // les parametres eventuels sont passées en JSON dans le parametre '&json='
     if (JSON.typeof(jsonParam) == F("object") ) {
       bigString += F("&json=");
@@ -40,18 +40,18 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonParam
     }
     D_println(helperFreeRam() + 0001);
     jsonParam = undefined;
-    //D_println(helperFreeRam() + 0002);
+    D_println(helperFreeRam() + 0002);
     WiFiClientSecure wifiSecure;
     //  HTTPClient http;  //Declare an object of class HTTPClient
     // !!! TODO get a set of valid root certificate for google !!!!
     wifiSecure.setInsecure(); //the magic line, use with caution  !!! certificate not checked
     //   D_println(helperFreeRam() + 00);
     //http.setTimeout(15000); // 15 Seconds
-    //D_println(bigString);
+    D_println(bigString);
     //http.end(); // 10 Seconds
     //http.setTimeout(10000); // 10 Seconds
     http.begin(wifiSecure, bigString); //Specify request destination
-    bigString = "";  // clear memory
+    //bigString = "";  // clear memory
 
 
     // define requested header
@@ -82,10 +82,14 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonParam
     D_println(helperFreeRam() + 02);
     int antiLoop = 0;
     while (httpCode == 302 && antiLoop++ < 3) {
-      bigString = http.header(headerKeys[0]);
+      //bigString = http.header(headerKeys[0]);
       // google will give answer in relocation
-      D_println(bigString);
+      //D_println(bigString);
+      D_println(helperFreeRam() + 031);
       http.end();   //Close connection (got err -7 if not)
+      D_println(helperFreeRam() + 041);
+      bigString = http.header(headerKeys[0]);
+      D_println(http.header(headerKeys[0]));
       http.begin(wifiSecure, bigString); //Specify request new destination
       http.collectHeaders(headerKeys, numberOfHeaders);
       httpCode = http.GET();//Send the request
@@ -110,10 +114,10 @@ bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonParam
     //D_println(helperFreeRam() + 1);
     http.end();   //Close connection (restore 22K of ram)
   } //clear string and http memory
-  D_println(helperFreeRam() + 04);
+  D_println(helperFreeRam() + 05);
   D_println(bigString);             //Print the response payload
   JSONVar jsonPayload = JSON.parse(bigString);
-  //D_println(helperFreeRam() + 05);
+  //D_println(helperFreeRam() + 06);
   bigString = "";
   if (JSON.typeof(jsonPayload) != F("object")) {
     D_println(JSON.typeof(jsonPayload));
