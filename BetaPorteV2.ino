@@ -632,7 +632,7 @@ void loop() {
       }
 
       if (Keyboard.inputString.equals(F("CHECK"))) {
-        JSONVar jsonData;
+        String jsonData;
         if (!dialWithGoogle(nodeName, F("check"), jsonData)) {
           Serial.println(F("Erreur check"));
         } else {

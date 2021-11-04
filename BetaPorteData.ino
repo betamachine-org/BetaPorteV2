@@ -38,13 +38,15 @@ bool jobCheckGSheet()    {
   Serial.println(F("jobCheckGSheet"));
   if (!WiFiConnected) return false;
 
-  JSONVar jsonData;
-  if (!dialWithGoogle(nodeName, "check", jsonData)) {
+  String jsonStr;
+  if (!dialWithGoogle(nodeName, "check", jsonStr)) {
     Serial.println(F("Erreur acces GSheet"));
     Events.delayedPush(1 * 3600 * 1000, evCheckGSheet); // recheck in 1 hours
     return false;
   }
+  JSONVar jsonData = JSON.parse(jsonStr);
   uint16_t baseIndex = (int)jsonData["baseindex"];
+  D_println(baseIndex);
   if ( localBaseIndex != baseIndex ) {
     gsheetBaseIndex = baseIndex;
     Serial.println(F("demande de relecture des données GSheet"));
@@ -68,14 +70,14 @@ bool jobReadBadgesGSheet() {
   if (gsheetIndex == 0) {
     MyLittleFS.remove(F("/badges.tmp"));  // raz le fichier temp
   }
-
-  JSONVar jsonData;
-  jsonData["first"] = gsheetIndex;
+  String JsonStr = F("{\"first\":");
+  JsonStr += gsheetIndex;
   gsheetIndex = 0;  // start from 0 if error
-  jsonData["max"] = 50;
+  JsonStr += F(",\"max\":50}");
 
   if (!WiFiConnected) return false;
-  if (!dialWithGoogle(nodeName, "getBadges", jsonData)) return (false);
+  if (!dialWithGoogle(nodeName, "getBadges", JsonStr)) return (false);
+  JSONVar jsonData = JSON.parse(JsonStr);
   uint16_t first = (int)jsonData["first"];
   uint16_t len = (int)jsonData["len"];
   uint16_t total = (int)jsonData["total"];
@@ -86,6 +88,7 @@ bool jobReadBadgesGSheet() {
   D_println(first);
   D_println(len);
   D_println(eof);
+  D_println(JSON.typeof(jsonData["badges"]));
   D_println(helperFreeRam() + 02);
   if (baseIndex != gsheetBaseIndex) {
     Serial.println(F("Abort lecture : new baseIndex"));
@@ -106,26 +109,21 @@ bool jobReadBadgesGSheet() {
   D_println(helperFreeRam() + 04);
   for (int N = 0 ; N < len ; N++ ) {
 
-    //    Serial.print(jsonData[N][0]);
-    //    Serial.print(" ");
-    //    Serial.print(jsonData[N][1]);
-    //    Serial.print(" ");
-    //    Serial.print(niceDisplayTime(jsonData[N][2], true));
-    //    Serial.print("-");
-    // pour limiter la taille des donnée JSON la date de debut et de fin est transmise
-    // en nombre de jour depuis 1/1/2000
+  D_println(jsonData["badges"][N]);
     //Entre le 01/01/1970 et le 01/01/2000, il s'est écoulé 10957 jours soit 30 ans.
-
+    D_println(jsonData["badges"][N][2]);
+    D_println((double)jsonData["badges"][N][2]);
     time_t aDate = ((double)jsonData["badges"][N][2] + 10957) * 24 * 3600;
     jsonData["badges"][N][2] = (double)aDate;
-
+    D_println((double)jsonData["badges"][N][2]);
+    
     aDate = ((double)jsonData["badges"][N][3] + 10957) * 24 * 3600;
     jsonData["badges"][N][3] = (double)aDate;
     Serial.print(niceDisplayTime(aDate, true));
     Serial.println(" ");
     Serial.print(niceDisplayTime((double)jsonData["badges"][N][3], true));
     Serial.println(" ");
-    String aLine = JSON.stringify((double)jsonData["badges"][N]);
+    String aLine = JSON.stringify(jsonData["badges"][N]);
     D_println(aLine);  //["043826CAAA5C81","Test_01A",1609459200,1640908800,0,"PERM"]
     aFile.println(aLine);
   }
@@ -265,23 +263,40 @@ void JobSendHisto() {
     aFile.close();
     return;
   }
+  //  JSONVar jsonData;
+  //  for (uint8_t N = 0; N < 5 ; N++) {
+  //    if (!aFile.available()) break;
+  //    String aLine = aFile.readStringUntil('\n');
+  //    //D_println(aLine);  //'{"action":"badge ok","info":"0E3F0FFA"}
+  //    JSONVar jsonLine = JSON.parse(aLine);
+  //    jsonData["liste"][N] = jsonLine;
+  //  }
+  //
   JSONVar jsonData;
-  for (uint8_t N = 0; N < 5 ; N++) {
-    if (!aFile.available()) break;
-    String aLine = aFile.readStringUntil('\n');
-    //D_println(aLine);  //'{"action":"badge ok","info":"0E3F0FFA"}
-    JSONVar jsonLine = JSON.parse(aLine);
-    jsonData["liste"][N] = jsonLine;
-  }
 
-  // sendto google
-  //D_println(JSON.stringify(jsonData));
-  if (!dialWithGoogle(nodeName, "histo", jsonData))  {
-    Events.delayedPush(1 * 60 * 1000, evSendHisto); // retry in one hour
-    aFile.close();
-    return;
-  }
+  { // jsonData String allocation
+    String jsonStr = F("{\"liste\":[");
+    for (uint8_t N = 0; N < 5 ; N++) {
+      if (!aFile.available()) break;
+      if (N) jsonStr += ',';
+      String aStr = aFile.readStringUntil('\n');
+      aStr.replace("\r", "");
+      jsonStr += aStr;
+    }
+    jsonStr += F("]}");
+
+    // sendto google
+    D_println(jsonStr);
+    if (!dialWithGoogle(nodeName, F("histo"), jsonStr))  {
+      Events.delayedPush(1 * 60 * 1000, evSendHisto); // retry in one hour
+      aFile.close();
+      return;
+    }
+    jsonData = JSON.parse(jsonStr);
+  }  // jsonData String de allocation
+
   uint16_t baseIndex = (int)jsonData["baseindex"];
+  D_println(baseIndex);
   if ( localBaseIndex != baseIndex ) {
     gsheetBaseIndex = baseIndex;
     Serial.println(F("demande de relecture des données GSheet"));

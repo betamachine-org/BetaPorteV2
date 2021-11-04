@@ -6,7 +6,7 @@
 
 #define SHEET_SERVER  "script.google.com"
 // need about 30K of ram !!!!!! WiFiClientSecure
-bool dialWithGoogle(const String& aNode, const String& aAction, String& jsonParam ) {
+bool dialWithGoogle(const String aNode, const String aAction, JSONVar &jsonParam) {
   // (global) HTTPClient http;  //Declare an object of class HTTPClient
   Serial.print(F("Dial With gSheet as '"));
   Serial.print(aNode);
@@ -31,21 +31,15 @@ bool dialWithGoogle(const String& aNode, const String& aAction, String& jsonPara
     bigString += F("&action=");
     bigString += encodeUri(aAction);;
 
-    if ( jsonParam.length() > 0 ) {
-      D_println(jsonParam);
+    //D_println(JSON.typeof(jsonParam));
+    // les parametres eventuels sont passées en JSON dans le parametre '&json='
+    if (JSON.typeof(jsonParam) == F("object") ) {
       bigString += F("&json=");
-      bigString += encodeUri(jsonParam);
+      //D_println(JSON.stringify(jsonParam));
+      bigString += encodeUri(JSON.stringify(jsonParam));
     }
-    D_println(bigString);
-//    //D_println(JSON.typeof(jsonParam));
-//    // les parametres eventuels sont passées en JSON dans le parametre '&json='
-//    if (JSON.typeof(jsonParam) == F("object") ) {
-//      bigString += F("&json=");
-//      //D_println(JSON.stringify(jsonParam));
-//      bigString += encodeUri(JSON.stringify(jsonParam));
-//    }
     D_println(helperFreeRam() + 0001);
-//    jsonParam = undefined;
+    jsonParam = undefined;
     D_println(helperFreeRam() + 0002);
     WiFiClientSecure wifiSecure;
     //  HTTPClient http;  //Declare an object of class HTTPClient
@@ -122,32 +116,23 @@ bool dialWithGoogle(const String& aNode, const String& aAction, String& jsonPara
   } //clear string and http memory
   D_println(helperFreeRam() + 05);
   D_println(bigString);             //Print the response payload
-  // check json string without real json lib  not realy good but use less memory and faster
-  uint16_t answerPos = bigString.indexOf(F(",\"answer\":{")); 
-  if ( !bigString.startsWith(F("{\"status\":true,")) || answerPos < 0 ) {
+  JSONVar jsonPayload = JSON.parse(bigString);
+  //D_println(helperFreeRam() + 06);
+  bigString = "";
+  if (JSON.typeof(jsonPayload) != F("object")) {
+    D_println(JSON.typeof(jsonPayload));
     return (false);
   }
-  // hard cut of "answer":{ xxxxxx } //
-  jsonParam = bigString.substring(answerPos + 10,bigString.length()-1);
-  D_println(jsonParam);
-  
-//  JSONVar jsonPayload = JSON.parse(bigString);
-//  //D_println(helperFreeRam() + 06);
-//  bigString = "";
-//  if (JSON.typeof(jsonPayload) != F("object")) {
-//    D_println(JSON.typeof(jsonPayload));
-//    return (false);
-//  }
-//
-//  // super check json data for "status" is a bool true  to avoid foolish data then supose all json data are ok.
-//  if (!jsonPayload.hasOwnProperty("status") || JSON.typeof(jsonPayload["status"]) != F("boolean") || !jsonPayload["status"]) {
-//    D_println(JSON.typeof(jsonPayload["status"]));
-//    return (false);
-//  }
-//
-//
-//  JSONVar answer = jsonPayload["answer"];  // cant grab object from the another not new object
-//  jsonParam = answer;                    // so memory use is temporary duplicated here
+
+  // super check json data for "status" is a bool true  to avoid foolish data then supose all json data are ok.
+  if (!jsonPayload.hasOwnProperty("status") || JSON.typeof(jsonPayload["status"]) != F("boolean") || !jsonPayload["status"]) {
+    D_println(JSON.typeof(jsonPayload["status"]));
+    return (false);
+  }
+
+
+  JSONVar answer = jsonPayload["answer"];  // cant grab object from the another not new object
+  jsonParam = answer;                    // so memory use is temporary duplicated here
   D_println(helperFreeRam() + 001);
   return (true);
 
