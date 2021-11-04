@@ -75,7 +75,8 @@ bool jobReadBadgesGSheet() {
   gsheetIndex = 0;  // start from 0 if error
   JsonStr += F(",\"max\":50}");
 
-  if (!WiFiConnected) return false;
+  if (!WiFiConnected) return false;  // we need to have gsheetIndex at 0 if error
+
   if (!dialWithGoogle(nodeName, "getBadges", JsonStr)) return (false);
   JSONVar jsonData = JSON.parse(JsonStr);
   uint16_t first = (int)jsonData["first"];
@@ -109,22 +110,18 @@ bool jobReadBadgesGSheet() {
   D_println(helperFreeRam() + 04);
   for (int N = 0 ; N < len ; N++ ) {
 
-  D_println(jsonData["badges"][N]);
+    D_println(jsonData["badges"][N]);
     //Entre le 01/01/1970 et le 01/01/2000, il s'est écoulé 10957 jours soit 30 ans.
-    D_println(jsonData["badges"][N][2]);
-    D_println((double)jsonData["badges"][N][2]);
     time_t aDate = ((double)jsonData["badges"][N][2] + 10957) * 24 * 3600;
     jsonData["badges"][N][2] = (double)aDate;
     D_println((double)jsonData["badges"][N][2]);
-    
+
     aDate = ((double)jsonData["badges"][N][3] + 10957) * 24 * 3600;
     jsonData["badges"][N][3] = (double)aDate;
     Serial.print(niceDisplayTime(aDate, true));
     Serial.println(" ");
-    Serial.print(niceDisplayTime((double)jsonData["badges"][N][3], true));
-    Serial.println(" ");
     String aLine = JSON.stringify(jsonData["badges"][N]);
-    D_println(aLine);  //["043826CAAA5C81","Test_01A",1609459200,1640908800,0,"PERM"]
+    D_println(aLine.length());  //["043826CAAA5C81","Test_01A",1609459200,1640908800,0,"PERM"]
     aFile.println(aLine);
   }
   aFile.close();

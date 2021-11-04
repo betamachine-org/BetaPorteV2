@@ -14,10 +14,11 @@ time_t getWebTime() {
 #define  HTTP_SERVER  "www.free.fr"  // my FAI web server
 
   Serial.println(F("connect to " HTTP_SERVER " to get time"));
-
+  
   WiFiClient client;
-//  HTTPClient http;  //Declare an object of class HTTPClient
-//  http.setTimeout(2000); // 2 Seconds
+  HTTPClient http;  //Declare an object of class HTTPClient (Gsheet and webclock)
+  //  HTTPClient http;  //Declare an object of class HTTPClient
+  //  http.setTimeout(2000); // 2 Seconds
   http.begin(client, "http://" HTTP_SERVER); //Specify request destination
   // we need date to setup clock so
   const char * headerKeys[] = {"date"} ;

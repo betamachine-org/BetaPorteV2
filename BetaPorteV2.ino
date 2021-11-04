@@ -113,7 +113,7 @@ BadgeNfc_PN532_I2C lecteurBadge;   // instance du lecteur de badge
 #include <ESP8266HTTPClient.h>
 #include <Arduino_JSON.h>
 //WiFiClientSecure client;
-HTTPClient http;  //Declare an object of class HTTPClient (Gsheet and webclock)
+//HTTPClient http;  //Declare an object of class HTTPClient (Gsheet and webclock)
 
 bool sleepOk = true;
 int  multi = 0; // nombre de clic rapide
@@ -180,7 +180,7 @@ void setup() {
     WiFi.mode(WIFI_STA);
     //WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   }
-  http.setTimeout(10000); // 10 Seconds
+
   Serial.println(F("Bonjour ...."));
 
   //Init I2C
