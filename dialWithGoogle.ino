@@ -45,7 +45,7 @@ bool dialWithGoogle(const String& aNode, const String& aAction, String& jsonPara
     D_println(helperFreeRam() + 0002);
 
     HTTPClient http;  //Declare an object of class HTTPClient (Gsheet and webclock)
-    http.setTimeout(10000); // 10 Seconds   (could be long with google)
+    http.setTimeout(15000); // 10 Seconds   (could be long with google)
     //  HTTPClient http;  //Declare an object of class HTTPClient
     // !!! TODO get a set of valid root certificate for google !!!!
     wifiSecure.setInsecure(); //the magic line, use with caution  !!! certificate not checked
@@ -79,6 +79,7 @@ bool dialWithGoogle(const String& aNode, const String& aAction, String& jsonPara
       // google will give answer in relocation
       D_println(helperFreeRam() + (0 * 31) );
       bigString = http.header(headerKeys[0]);
+      http.getString();   //Get the request response payload
       http.end();   //Close connection (got err -7 if not)
       D_println(helperFreeRam() + (0 * 32) );
       D_println(bigString.length());

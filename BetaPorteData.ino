@@ -37,15 +37,18 @@
 bool jobCheckGSheet()    {
   Serial.println(F("jobCheckGSheet"));
   if (!WiFiConnected) return false;
+  uint16_t baseIndex;
+  {
+    String jsonStr;
+    if (!dialWithGoogle(nodeName, "check", jsonStr)) {
+      Serial.println(F("Erreur acces GSheet"));
+      Events.delayedPush(1 * 3600 * 1000, evCheckGSheet); // recheck in 1 hours
+      return false;
+    }
+    JSONVar jsonData = JSON.parse(jsonStr);
+    baseIndex = (int)jsonData["baseindex"];
+  } // clear json and str memory
 
-  String jsonStr;
-  if (!dialWithGoogle(nodeName, "check", jsonStr)) {
-    Serial.println(F("Erreur acces GSheet"));
-    Events.delayedPush(1 * 3600 * 1000, evCheckGSheet); // recheck in 1 hours
-    return false;
-  }
-  JSONVar jsonData = JSON.parse(jsonStr);
-  uint16_t baseIndex = (int)jsonData["baseindex"];
   D_println(baseIndex);
   if ( localBaseIndex != baseIndex ) {
     gsheetBaseIndex = baseIndex;
@@ -89,7 +92,7 @@ bool jobReadBadgesGSheet() {
   D_println(first);
   D_println(len);
   D_println(eof);
-  D_println(JSON.typeof(jsonData["badges"]));
+  //D_println(JSON.typeof(jsonData["badges"]));
   D_println(helperFreeRam() + 02);
   if (baseIndex != gsheetBaseIndex) {
     Serial.println(F("Abort lecture : new baseIndex"));
@@ -104,7 +107,6 @@ bool jobReadBadgesGSheet() {
     jsonHeader["timestamp"] = (double)currentTime;
     jsonHeader["badgenumber"] = total;
     aFile.println(JSON.stringify(jsonHeader));
-    D_println(currentTime);
     D_println(helperFreeRam() + 03);
   }
   D_println(helperFreeRam() + 04);
@@ -130,8 +132,8 @@ bool jobReadBadgesGSheet() {
     D_println(F("TW: no saved config .conf !!!! "));
     return (false);
   }
-  String aString = aFile.readStringUntil('\n');
-  D_println(aString);  //aString => '{"baseindex":19,"timestamp":1633712861,"badgenumber":5}
+  //  String aString = aFile.readStringUntil('\n');
+  //  D_println(aString);  //aString => '{"baseindex":19,"timestamp":1633712861,"badgenumber":5}
 
   aFile.close();
   if (!eof) {
@@ -146,11 +148,7 @@ bool jobReadBadgesGSheet() {
     Serial.print(F("New base "));
     D_println(localBaseIndex);
   }
-
-
-
   D_println(helperFreeRam() + 05);
-
   return (true);
 }
 
@@ -173,9 +171,6 @@ bool jobGetBaseIndex() {
   localBaseIndex = (int)jsonHeader["baseindex"];
   gsheetBaseIndex = localBaseIndex;
   D_println(localBaseIndex);
-
-
-
   return (true);
 
 }
@@ -227,22 +222,23 @@ badgeMode_t jobCheckBadge(const String aUUID) {
   }
   aFile.close();
   return (bmInvalide);
-
 }
 
 void writeHisto(const String aAction, const String aInfo) {
   //MyLittleFS.remove(F("/histo.txt"));  // raz le fichier temp
-  JSONVar jsonData;
-  jsonData["timestamp"] = (double)currentTime;
-  jsonData["action"] = aAction;
-  jsonData["info"] = aInfo;
-  String jsonHisto = JSON.stringify(jsonData);
-  D_println(jsonHisto);
-  //myObject["x"] = undefined;  remove an object from json
-  File aFile = MyLittleFS.open(HISTO_FNAME, "a+");
-  if (!aFile) return;
-  aFile.println(jsonHisto);
-  aFile.close();
+  {
+    JSONVar jsonData;
+    jsonData["timestamp"] = (double)currentTime;
+    jsonData["action"] = aAction;
+    jsonData["info"] = aInfo;
+    String jsonHisto = JSON.stringify(jsonData);
+    D_println(jsonHisto);
+    //myObject["x"] = undefined;  remove an object from json
+    File aFile = MyLittleFS.open(HISTO_FNAME, "a+");
+    if (!aFile) return;
+    aFile.println(jsonHisto);
+    aFile.close();
+  }
   Events.delayedPush(0.2 * 60 * 1000, evSendHisto); // send histo in 5 minutes
 }
 
@@ -255,7 +251,7 @@ void JobSendHisto() {
   if (!WiFiConnected) return;
   File aFile = MyLittleFS.open(HISTO_FNAME, "r");
   if (!aFile) return;
-  aFile.setTimeout(1);
+  aFile.setTimeout(5);
   if (!aFile.available()) {
     aFile.close();
     return;
@@ -269,11 +265,11 @@ void JobSendHisto() {
   //    jsonData["liste"][N] = jsonLine;
   //  }
   //
-  JSONVar jsonData;
-
+  uint16_t baseIndex;
+  time_t aTimeZone;
   { // jsonData String allocation
     String jsonStr = F("{\"liste\":[");
-    for (uint8_t N = 0; N < 5 ; N++) {
+    for (uint8_t N = 0; N < 10 ; N++) {
       if (!aFile.available()) break;
       if (N) jsonStr += ',';
       String aStr = aFile.readStringUntil('\n');
@@ -289,10 +285,12 @@ void JobSendHisto() {
       aFile.close();
       return;
     }
+    JSONVar jsonData;
     jsonData = JSON.parse(jsonStr);
+    baseIndex = (int)jsonData["baseindex"];
+    aTimeZone = (double)jsonData["timezone"];
   }  // jsonData String de allocation
 
-  uint16_t baseIndex = (int)jsonData["baseindex"];
   D_println(baseIndex);
   if ( localBaseIndex != baseIndex ) {
     gsheetBaseIndex = baseIndex;
@@ -301,7 +299,6 @@ void JobSendHisto() {
   }
 
   // mise a jour de la time zone
-  time_t aTimeZone = (double)jsonData["timezone"];
   D_println(aTimeZone);
   if (aTimeZone != timeZone) {
     writeHisto( F("Old TimeZone"), String(timeZone) );
@@ -312,10 +309,6 @@ void JobSendHisto() {
     currentTime = now();
     writeHisto( F("New TimeZone"), String(timeZone) );
   }
-
-
-
-
 
   if (!aFile.available()) {
     aFile.close();

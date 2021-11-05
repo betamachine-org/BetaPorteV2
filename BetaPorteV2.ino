@@ -112,8 +112,6 @@ BadgeNfc_PN532_I2C lecteurBadge;   // instance du lecteur de badge
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <Arduino_JSON.h>
-//WiFiClientSecure client;
-//HTTPClient http;  //Declare an object of class HTTPClient (Gsheet and webclock)
 
 bool sleepOk = true;
 int  multi = 0; // nombre de clic rapide
@@ -151,13 +149,12 @@ bool     configOk = true; // global used by getConfig...
 uint16_t gsheetBaseIndex = 0;   //version de la gsheet actuelle
 uint16_t gsheetIndex = 0;       // position de la lecture en cours
 String   currentMessage = "................";        // Message deuxieme ligne de l'afficheur
-//JSONVar  jsonUserInfo;          // array des info GSheet du badge detecté
 bool     configErr = false;
 enum badgeMode_t {bmOk, bmBadDate, bmBadTime, bmInvalide, bmBaseErreur, bmMAX };
 //badgeMode_t badgeMode = bmInvalide;
 
 void setup() {
-  enableWiFiAtBootTime();   // obligatoire pour lekernel ESP > 30
+  enableWiFiAtBootTime();   // obligatoire pour lekernel ESP > 3.0
   Serial.begin(115200);
 
   //porte fermée = gache active
@@ -167,8 +164,6 @@ void setup() {
 
 
   Serial.println(F("\r\n\n" APP_NAME));
-
-  //WiFi.forceSleepBegin();  // this do  a WiFiMode OFF  !!! 21ma
 
   // Start instance
   Events.begin();
@@ -377,14 +372,14 @@ void loop() {
           }
         }
 
-
-        // If we are not connected we warn the user every 30 seconds that we need to update credential
+        // Save current time in RTC memory (not erased by a reset)
         currentTime = now();
         savedRTCmemory.actualTimestamp = currentTime;  // save time in RTC memory
         saveRTCmemory();
 
 
 
+        // If we are not connected we warn the user every 30 seconds that we need to update credential
         if ( !WiFiConnected && second() % 30 ==  15) {
           // every 30 sec
           Serial.print(F("module non connecté au Wifi local "));
