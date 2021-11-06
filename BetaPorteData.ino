@@ -214,8 +214,7 @@ badgeMode_t jobCheckBadge(const String aUUID) {
       Serial.print(F("Match "));
       D_println((const char*)jsonLine[1]);
       String pseudo = (const char*)jsonLine[1];
-      currentMessage = pseudo.substring(0, 15);
-
+      messageL1 = pseudo.substring(0, 16);
       return (bmOk);
     }
     N++;
@@ -426,4 +425,10 @@ String grabFromStringUntil(String &aString, const char aKey) {
   D_println(result);
   D_println(aString);
   return (result);
+}
+
+void setMessage(const String& line2) {
+  messageL2 = line2.substring(0,16);
+  lcdRedraw=true;
+  Events.delayedPush(15*1000,evClearMessage);
 }

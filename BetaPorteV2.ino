@@ -70,6 +70,7 @@ enum tUserEventCode {
   evCheckGSheet,        // simple check de la base normalement toute les 6 heures (5 minutes apres un acces)
   evReadGSheet,         // demande de lecture de la gsheet (mmise a jour liste des badges)
   evSendHisto,
+  evClearMessage,
   // evenement action
   doReset,
 };
@@ -148,7 +149,10 @@ bool     configOk = true; // global used by getConfig...
 
 uint16_t gsheetBaseIndex = 0;   //version de la gsheet actuelle
 uint16_t gsheetIndex = 0;       // position de la lecture en cours
-String   currentMessage = "................";        // Message deuxieme ligne de l'afficheur
+String   messageL1;
+String   messageL2;
+bool     displayClock;
+
 bool     configErr = false;
 enum badgeMode_t {bmOk, bmBadDate, bmBadTime, bmInvalide, bmBaseErreur, bmMAX };
 //badgeMode_t badgeMode = bmInvalide;
@@ -160,8 +164,6 @@ void setup() {
   //porte fermée = gache active
   pinMode(GACHE_PIN, OUTPUT);
   digitalWrite(GACHE_PIN, GACHE_ACTIVE);   //Porte fermée
-
-
 
   Serial.println(F("\r\n\n" APP_NAME));
 
@@ -187,6 +189,9 @@ void setup() {
   }
 
   // Init LCD
+  messageL1.reserve(16);
+  messageL2.reserve(16);
+
   lcd.begin(16, 2); // initialize the lcd
   lcd.setBacklight(100);
   lcd.println(F(APP_NAME));
@@ -251,12 +256,13 @@ void setup() {
   //D_println(GKey);
 
   if (configErr) {
-    currentMessage = F("Config Error");
+    setMessage(F("Config Error"));
     beep( 880, 500);
     delay(500);
   } else {
     //currentMessage = F("device=");
-    currentMessage = nodeName;
+    messageL1 = F("Init Ok");
+    setMessage(nodeName.substring(0, 16));
     // a beep
     beep( 880, 500);
     delay(500);
@@ -295,35 +301,35 @@ void loop() {
             lcdOk = false;
             Serial.println(F("LCD lost"));
           } else {
-            static uint8_t lastMinute = minute();
-            if (lastMinute != minute()) {
-              lastMinute = minute();
-              lcdRedraw = true;
-            }
             if ( lcdOk && lcdRedraw ) {
               lcd.home();
-
-              if (year() < 2000) {
-                lcd.print F("? Date ?");
+              if (messageL1.length()) {
+                lcd.print(messageL1);
               } else {
-                lcd.print(Digit2_str(day()));
-                lcd.print('/');
-                lcd.print(Digit2_str(month()));
-                lcd.print('/');
-                lcd.print(Digit2_str(year() % 100));
+                if (year() < 2000) {
+                  lcd.print F("? Date ?");
+                } else {
+                  lcd.print(Digit2_str(day()));
+                  lcd.print('/');
+                  lcd.print(Digit2_str(month()));
+                  lcd.print('/');
+                  lcd.print(Digit2_str(year() % 100));
+                }
               }
-
-              lcd.print(F("   "));
-              //lcdTransmitSign = ' ';
-              lcd.print(Digit2_str(hour()));
-              lcd.print(lcdTransmitSign);
-              lcd.print(Digit2_str(minute()));
-              lcd.setCursor(0, 1);
-              lcd.print(currentMessage);
               lcd.print(LCD_CLREOL);
-              Events.delayedPush(300, evBlinkClock, false);
-
-
+              displayClock = (messageL1.length() < 11);
+              if (displayClock) {
+                lcd.setCursor(11, 0);
+                lcd.print(Digit2_str(hour()));
+                lcd.print(lcdTransmitSign);
+                lcd.print(Digit2_str(minute()));
+                Events.delayedPush(300, evBlinkClock, false);
+              }
+              lcd.setCursor(0, 1);
+              String aStr = messageL2;
+              if (aStr.length() == 0) aStr=nodeName.substring(0,16);
+              lcd.print(aStr);
+              if (aStr.length() < 16) lcd.print(LCD_CLREOL);
               lcdRedraw = false;
             }
           }
@@ -333,14 +339,22 @@ void loop() {
       break;
 
     case evBlinkClock: {
-        bool show = Events.ext;
-        lcd.setCursor(13, 0);
-        lcd.print( show ? lcdTransmitSign : ' ');
-        show = !show;
-        Events.delayedPush(show ? 250 : 750, evBlinkClock, show);
+        if (displayClock) {
+          bool show = Events.ext;
+          lcd.setCursor(13, 0);
+          lcd.print( show ? lcdTransmitSign : ' ');
+          show = !show;
+          Events.delayedPush(show ? 250 : 750, evBlinkClock, show);
+        }
       }
       break;
 
+    case evClearMessage: {
+        messageL1 = "";
+        messageL2 = "";
+        lcdRedraw = true;
+      }
+      break;
     case ev1Hz: {
 
         // check for connection to local WiFi  1 fois par seconde c'est suffisant
@@ -376,8 +390,11 @@ void loop() {
         currentTime = now();
         savedRTCmemory.actualTimestamp = currentTime;  // save time in RTC memory
         saveRTCmemory();
-
-
+        static uint8_t lastMinute = minute();
+        if (lastMinute != minute()) {
+          lastMinute = minute();
+          lcdRedraw = true;
+        }
 
         // If we are not connected we warn the user every 30 seconds that we need to update credential
         if ( !WiFiConnected && second() % 30 ==  15) {
@@ -439,22 +456,19 @@ void loop() {
         badgeMode_t badgeMode = jobCheckBadge(UUID);
         if (badgeMode == bmOk) {
           Serial.println(F("Badge Ok "));
-          lcd.setCursor(0, 0);
-          lcd.println(F("Bonjour ..."));
-
-          lcd.println(currentMessage);
+          setMessage(F("Bonjour ..."));
           jobOpenDoor();
           writeHisto(F("badge ok"), UUID);
 
         } else {
           delay(200);
           beep( 444, 400);
+          //enum badgeMode_t {bmOk, bmBadDate, bmBadTime, bmInvalide, bmBaseErreur, bmMAX };
+
           String aString = F("Badge err : ");
           aString += badgeMode;
           Serial.println(aString);
-          lcd.setCursor(0, 0);
-          lcd.println(F("Bonjour ..."));
-          lcd.println(aString);
+          setMessage(aString);
           writeHisto(aString, UUID);
         }
 
@@ -640,13 +654,9 @@ void loop() {
         D_println(jReadBadgesGSheet);
       }
       break;
-
-
   }
 }
 
-
-// helpers
 void jobOpenDoor() {
   digitalWrite(GACHE_PIN, !GACHE_ACTIVE);   //ouvre la porte
   Led0.setFrequence(5);
@@ -657,6 +667,9 @@ void jobCloseDoor() {
   digitalWrite(GACHE_PIN, GACHE_ACTIVE);   //Porte fermée
   Led0.setFrequence(WiFiConnected ? 1 : 2);
 }
+
+
+// helpers
 
 // Check I2C
 bool checkI2C(const uint8_t i2cAddr)
