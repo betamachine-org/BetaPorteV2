@@ -62,6 +62,7 @@ bool jobCheckGSheet()    {
 }
 
 
+
 // lecture des badges puis ecriture sur la flash fichier badges.json
 // la lecture est faire par paquet de 50
 //
@@ -141,8 +142,8 @@ bool jobReadBadgesGSheet() {
     gsheetIndex = first + len;
     Events.delayedPush(10000, evReadGSheet);
   } else {
-    MyLittleFS.remove(F("/badges.json"));
-    MyLittleFS.rename(F("/badges.tmp"), F("/badges.json"));
+    MyLittleFS.remove(BADGE_FNAME);
+    MyLittleFS.rename(F("/badges.tmp"), BADGE_FNAME);
     Events.delayedPush(6 * 3600 * 1000, evCheckGSheet); // recheck in 6 hours
     localBaseIndex = baseIndex;
     Serial.print(F("New base "));
@@ -154,7 +155,7 @@ bool jobReadBadgesGSheet() {
 
 // lecture de la version de la base sur la flash fichier badges.json
 bool jobGetBaseIndex() {
-  File aFile = MyLittleFS.open(F("/badges.json"), "r");
+  File aFile = MyLittleFS.open(BADGE_FNAME, "r");
   if (!aFile) return (false);
 
   String aString = aFile.readStringUntil('\n');
@@ -175,12 +176,44 @@ bool jobGetBaseIndex() {
 
 }
 
+// lecture des plages horaire puis ecriture sur la flash fichier badges.json
+// plagehoraire est une named array de plage en json
+// en cas d'erreur retry 15 minutes  
+//
+bool jobReadPlagesGSheet() {
+    D_println(helperFreeRam() + 01);
+  if (!WiFiConnected) return false; 
+  Events.delayedPush(15 * 60 * 1000, evReadPlage); // reread in 15 min en cas d'erreur
+  Serial.print(F("jobReadPlagesGSheet at "));
+  //MyLittleFS.remove(F("/plage.tmp"));  // raz le fichier temp
+  String JsonStr = F("{\"max\":10");
+  if (!dialWithGoogle(nodeName, "getBadges", JsonStr)) return (false);
+  JSONVar jsonData = JSON.parse(JsonStr);
+  uint16_t length = (int)jsonData["length"];
+  uint16_t baseIndex = (int)jsonData["baseIndex"];
+  D_println(baseIndex);
+  D_println(length);
+  Events.removeDelayedPush(15 * 60 * 1000, evReadPlage); // reread in 15 min en cas d'erreur
+    if (baseIndex != gsheetBaseIndex) {
+    Serial.println(F("Abort lecture : new baseIndex"));
+    gsheetBaseIndex = baseIndex;
+    return (false);
+  }
+  File aFile = MyLittleFS.open(F("/badges.tmp"), "a");
+  if (!aFile) return false;
+
+}
+
+
+
+
+
 
 
 // verification de la validité d'un badge dans la base sur la flash fichier badges.json
 badgeMode_t jobCheckBadge(const String aUUID) {
   //enum badgeMode_t {bmInvalide, bmBadDate, bmBadTime ,bmOk, bmBaseErreur bmMAX };
-  File aFile = MyLittleFS.open(F("/badges.json"), "r");
+  File aFile = MyLittleFS.open(BADGE_FNAME, "r");
   if (!aFile) return (bmBaseErreur);
   String aString = aFile.readStringUntil('\n');
 
@@ -412,7 +445,7 @@ void eraseConfig() {
 
 
 String grabFromStringUntil(String &aString, const char aKey) {
-  String result = "";
+  String result;
   int pos = aString.indexOf(aKey);
   if ( pos == -1 ) {
     result = aString;
@@ -422,8 +455,6 @@ String grabFromStringUntil(String &aString, const char aKey) {
   result = aString.substring(0, pos);
   //aString = aString.substring(pos + aKey.length());
   aString = aString.substring(pos + 1);
-  D_println(result);
-  D_println(aString);
   return (result);
 }
 
@@ -431,4 +462,9 @@ void setMessage(const String& line2) {
   messageL2 = line2.substring(0,16);
   lcdRedraw=true;
   Events.delayedPush(15*1000,evClearMessage);
+}
+
+void setMessage(const String& line1, const String& line2) {
+  messageL1 = line1.substring(0,16);
+  setMessage(line2);
 }

@@ -1,8 +1,5 @@
 function doGet(parametres) {
   try {
-    //var timeStamp = new Date();  // javascript date 
-    //var timestamp = unixLocalTime(localTime);   // local time in unix format
-    //var timezone = localTime.getTimezoneOffset() / 60;
 
     var node = parametres.parameter.node;       // identificateur unique de la device emetrice ex : node01
     if (!node) throw 'bad device';  // doesnt use node 
@@ -40,7 +37,7 @@ function doGet(parametres) {
     'action': action,
   }
 
-  // retourne le timestamp, la time zone, la base index
+  // retourne le timestamp, la time zone, la base index  (same as hiso)
   if (action == 'check') {
     var timeStamp = unixLocalTime(date);   // local time in unix format
     var timeZone = date.getTimezoneOffset() / 60;
@@ -61,7 +58,25 @@ function doGet(parametres) {
 
 
   if (action == 'getPlagesHoraire') {
-    result = SpreadsheetApp.getActiveSpreadsheet().getRangeByName('PlagesHoraire').getValues();;
+    plagesData = SpreadsheetApp.getActiveSpreadsheet().getRangeByName('PlagesHoraire').getValues();
+
+    var plages = {};
+
+    // transformation en named array sur les noms de la premiere collone
+    // 
+    for (N = 0; N < plagesData.length; N++) {
+      var data = plagesData[N];
+      var name = data.shift();
+      plages[name] = data;
+    }
+
+    var result = {
+      'baseindex': baseIndex,
+      'length': Object.keys(plages).length,
+      'plages': plages,
+    }
+
+
     eventJSON.answer = result;
     sheet.getRange(newRow, 5).setValue('Ok');
     return ContentService.createTextOutput(JSON.stringify(eventJSON)).setMimeType(ContentService.MimeType.JSON);
@@ -98,6 +113,7 @@ function doGet(parametres) {
 
     sheetBadges = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Badges');
     totalBadges = sheetBadges.getLastRow() - 1;
+    if (totalBadges > 1000) totalBadges = 1000;  // limitation a 1000 bagdes 
     var len = max;
     if (first - 1 + len > totalBadges) len = totalBadges - first + 1;
 
@@ -109,6 +125,7 @@ function doGet(parametres) {
       badges = sheetBadges.getRange(first + 1, 1, len, 6).getValues();
       // conversion des dates en day from 2000  (make json string much shorter)
       for (N = 0; N < len; N++) {
+        // todo limitation de la taille des données
         badges[N][2] = unixDaysFrom2000(badges[N][2]);
         badges[N][3] = unixDaysFrom2000(badges[N][3]);
       }
@@ -127,10 +144,10 @@ function doGet(parametres) {
     return ContentService.createTextOutput(JSON.stringify(eventJSON)).setMimeType(ContentService.MimeType.JSON);
   }
 
-  // param is an arry of object to log type '{"action":"badge ok","info":"0EXXXXXX"}
+  // param is an array of object to log type '{"action":"badge ok","info":"0EXXXXXX"}
   if (action == 'histo') {
-    //result = SpreadsheetApp.getActiveSpreadsheet().getRangeByName('PlagesHoraire').getValues();;
-    var paramJson = parametres.parameter.json;        // array of 
+    sheetHisto = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Historique');
+    var paramJson = parametres.parameter.json;        // array 
     if (!paramJson) {
       eventJSON.status = false,
         eventJSON.message = 'Error no param info'
@@ -141,17 +158,51 @@ function doGet(parametres) {
           event.JSON.message = 'Error json param'
       } else {
         for (var N = 0; N < params.liste.length; N++) {
+          var action = params.liste[N].action;
+          var info = params.liste[N].info;
+          var timeStamp = jsDate(params.liste[N].timestamp)
           var values = [[
-            jsDate(params.liste[N].timestamp),
+            timeStamp,
             node,
-            params.liste[N].action,
-            params.liste[N].info,
+            action,
+            info,
             'Ok'
           ]];
-          sheet.getRange(newRow + N, 1, 1, 5).setValues(values);
+          sheet.getRange(newRow + N, 1, 1, 5).setValues(values); //save in RowData
+          // save in histo
+          var newRowHisto = sheetHisto.getLastRow() + 1;
+          // correction de la date si pas de date valide
+          if (values[0][0].getUTCFullYear() < 2000) values[0][0] = date;
+          sheetHisto.getRange(newRowHisto, 1, 1, 5).setValues(values); //save in Histo
 
+
+          // save date in badge liste for this uuid
+          if (action.startsWith('badge')) {
+            var aUUID = info;
+            sheetBadges = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Badges');
+            totalBadges = sheetBadges.getLastRow() - 1;
+            badges = sheetBadges.getRange(2, 1, totalBadges, 1).getValues();
+            for (var N1 = 0; N1 < totalBadges; N1++) {
+              if (badges[N1][0] == aUUID) {
+                sheetBadges.getRange(N1 + 2, 7).setValue(timeStamp);
+                break;
+              }
+            }
+          }
         }
-        var values = [['histo len=' + params.liste.length, date]];
+
+        var timeStamp = unixLocalTime(date);   // local time in unix format
+        var timeZone = date.getTimezoneOffset() / 60;
+
+        var result = {
+          'timestamp': timeStamp,
+          'timezone': timeZone,
+          'baseindex': baseIndex,
+        }
+
+        eventJSON.answer = result;
+
+        var values = [['baseIndex=' + baseIndex + ' timeZone=' + timeZone + ' histo len=' + params.liste.length, date]];
         sheet.getRange(newRow, 6, 1, 2).setValues(values);
 
       }
@@ -162,81 +213,7 @@ function doGet(parametres) {
 
 
 
-  /**
-    if (action == 'writeInfo') {
-      //result = SpreadsheetApp.getActiveSpreadsheet().getRangeByName('PlagesHoraire').getValues();;
-      var paramJson = parametres.parameter.json;        // nom de l'evenerment :  ex BP0
-      if (!paramJson) {
-        eventJSON.status = false,
-          event.JSON.message = 'Error no param info'
-      } else {
-        var params = JSON.parse(paramJson);
-        sheet.getRange(newRow, 6).setValue(params.info);
-      }
-      sheet.getRange(newRow, 5).setValue('Ok');
-      return ContentService.createTextOutput(JSON.stringify(eventJSON)).setMimeType(ContentService.MimeType.JSON);
-    }
-  
-  
-  
-    var id = parametres.parameter.ID;
-    var key = parametres.parameter.KEY;
-  
-    if (action == 'badgeEnter') {
-      var time = parametres.parameter.time;
-      if (!time) time = localTime;
-      var sheet2 = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Historique');
-      var newRow2 = sheet2.getLastRow() + 1;
-      var values = [[node, time, key, id, action]];
-      sheet2.getRange(newRow2, 1, 1, 5).setValues(values);
-      var eventJSON = {
-        'status': true,
-        'message': 'Success',
-        'action': action,
-        'timestamp': timestamp,
-        'checkChange': checkChange
-      }
-      sheet.getRange(newRow, 5).setValue('Ok');
-      sheet.getRange(newRow, 6).setValue(id + ' ' + key);
-      return ContentService.createTextOutput(JSON.stringify(eventJSON)).setMimeType(ContentService.MimeType.JSON);
-    }
-  
-    if (action == 'getBadgeInfo') {
-      var sheet2 = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Badges');
-      var lastRow2 = sheet2.getLastRow();
-      var values = sheet2.getRange(2, 1, lastRow2, 6).getValues();
-      var result = "";
-      for (var i = 0; i < lastRow2; i++) {
-        if (values[i][0] == key) {
-          var result = values[i];
-          // make short date delta in days from 1/1/2000
-          startDate = new Date(2020, 12, 1)
-          result[2] = (new Date(result[2]) - startDate) / (3600 * 1000);
-          result[3] = (new Date(result[3]) - startDate) / (3600 * 1000);
-          break;
-        }
-      }
-  
-      if (result) {
-        sheet.getRange(newRow, 5).setValue('Ok');
-      } else {
-        result = ['Not found'];
-        sheet.getRange(newRow, 5).setValue('Not found');
-      }
-  
-      var eventJSON = {
-        'status': true,
-        'message': 'Success',
-        'action': action,
-        'timestamp': timestamp,
-        'checkChange': checkChange,
-        'result': result
-      }
-      sheet.getRange(newRow, 6).setValue(key);
-  
-      return ContentService.createTextOutput(JSON.stringify(eventJSON)).setMimeType(ContentService.MimeType.JSON);
-    }
-  */
+
   sheet.getRange(newRow, 5).setValue('Err action : ' + action);
 
   var eventJSON = {
@@ -294,9 +271,12 @@ function jsDate(aUnixTimeStamp) {
   return new Date((aUnixTimeStamp + (new Date().getTimezoneOffset() * 60)) * 1000);
 }
 
+//Entre le 01/01/1970 et le 01/01/2000, il s'est écoulé 10957 jours soit 30 ans.
+
+
 function unixDaysFrom2000(aExeclDate) {
   if (!aExeclDate) aExeclDate = new Date();
-  return (aExeclDate.getTime() - new Date(2000, 12, 1).getTime()) / (1000 * 3600 * 24);
+  return Math.floor((aExeclDate.getTime() - new Date(2000, 12, 1).getTime()) / (1000 * 3600 * 24));
 }
 
 

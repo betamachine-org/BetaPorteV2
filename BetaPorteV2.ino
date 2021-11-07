@@ -144,11 +144,16 @@ bool     lowPowerActive = false;
 
 time_t   currentTime;
 int8_t   timeZone = -2;  //les heures sont toutes en localtimes
-uint16_t localBaseIndex = 0;    //version de la derniere GSheet en flash
+uint16_t badgesBaseIndex = 0;  //version de la base badges en flash
+uint16_t palgesBaseIndex = 0;  //version de la base plages en flash
+uint16_t gsheetBaseIndex = 0;   //version derniere de la gsheet connue
+//uint16_t gsheetIndex = 0;       // position de la lecture en cours
+
+
+
+
 bool     configOk = true; // global used by getConfig...
 
-uint16_t gsheetBaseIndex = 0;   //version de la gsheet actuelle
-uint16_t gsheetIndex = 0;       // position de la lecture en cours
 String   messageL1;
 String   messageL2;
 bool     displayClock;
@@ -260,9 +265,7 @@ void setup() {
     beep( 880, 500);
     delay(500);
   } else {
-    //currentMessage = F("device=");
-    messageL1 = F("Init Ok");
-    setMessage(nodeName.substring(0, 16));
+    setMessage(F("Init Ok"),nodeName);
     // a beep
     beep( 880, 500);
     delay(500);
