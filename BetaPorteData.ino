@@ -6,6 +6,7 @@
     les donnees config sont stockée en flash sous forme de fichier : 1 ligne unique de JSON stringifyed  config.json
 
     Copyright 20201 Pierre HENRY net23@frdev.com .
+    https://github.com/betamachine-org/BetaPorteV2   net23@frdev.com
 
   This file is part of BetaPorteV2.
 
@@ -27,84 +28,68 @@
 *************************************************/
 #define HISTO_FNAME  F("/histo.json")
 #define CONFIG_FNAME F("/config.json")
+#define BADGE_FNAME F("/badges.json")
+#define PLAGE_FNAME F("/plages.json")
 
+//Version de la base 0 en cas d'erreur
+uint16_t jobGetDistantBaseVersion() {
+  Serial.println(F("jobGetDistantBaseVersion"));
+  if (!WiFiConnected) return 0;   // en cas de reconnection evCheckDistantBase est relancée en auto
 
-
-// acces minimal a Gsheet
-// si Google n'est pas ok on reessaye dans 1 heure
-// si la baseIndex n'est pas a jour on lance un evReadGsheet
-
-bool jobCheckGSheet()    {
-  Serial.println(F("jobCheckGSheet"));
-  if (!WiFiConnected) return false;
-  uint16_t baseIndex;
-  {
-    String jsonStr;
-    if (!dialWithGoogle(nodeName, "check", jsonStr)) {
-      Serial.println(F("Erreur acces GSheet"));
-      Events.delayedPush(1 * 3600 * 1000, evCheckGSheet); // recheck in 1 hours
-      return false;
-    }
-    JSONVar jsonData = JSON.parse(jsonStr);
-    baseIndex = (int)jsonData["baseindex"];
-  } // clear json and str memory
-
-  D_println(baseIndex);
-  if ( localBaseIndex != baseIndex ) {
-    gsheetBaseIndex = baseIndex;
-    Serial.println(F("demande de relecture des données GSheet"));
-    Events.delayedPush(10 * 1000, evReadGSheet); // reread data from 0
-  } else {
-    // all ok re check in 6 hours
-    Events.delayedPush(6 * 3600 * 1000, evCheckGSheet); // recheck in 6 hours
-  }
-  return true;
+  // lecture de la version de la base distante
+  String jsonStr;
+  if (!dialWithGoogle(nodeName, "check", jsonStr)) return (0);
+  JSONVar jsonData = JSON.parse(jsonStr);
+  return (int)jsonData["baseversion"];
 }
 
 
-
 // lecture des badges puis ecriture sur la flash fichier badges.json
-// la lecture est faire par paquet de 50
+// la lecture est faite par paquet de 50 (taille ram dispo)
 //
-bool jobReadBadgesGSheet() {
-  D_println(helperFreeRam() + 01);
-  Events.delayedPush(15 * 60 * 1000, evCheckGSheet); // recheck in 15 min en cas d'erreur
-  Serial.print(F("jobReadBadgesGSheeet at "));
-  Serial.println(gsheetIndex);
-  if (gsheetIndex == 0) {
+uint8_t jobReadDistantBadges(const bool fromStart) {
+  uint8_t result = 2; // result : 0 = done  1 = continu 2 = abandon
+  if (!WiFiConnected) return result;  // we need to have gsheetIndex at 0 if error
+
+  D_println(helperFreeRam() + (0 * 01));
+  static uint16_t currentBadgeIndex = 0;
+  static uint16_t currentBadgeVersion = 0;  
+  if (fromStart) {
+    currentBadgeIndex = 0;
+    currentBadgeVersion = distantBaseVersion;  
     MyLittleFS.remove(F("/badges.tmp"));  // raz le fichier temp
   }
+  Serial.print(F("jobReadDistantBadges at "));
+  Serial.println(currentBadgeIndex);
+
   String JsonStr = F("{\"first\":");
-  JsonStr += gsheetIndex;
-  gsheetIndex = 0;  // start from 0 if error
+  JsonStr += currentBadgeIndex;
   JsonStr += F(",\"max\":50}");
 
-  if (!WiFiConnected) return false;  // we need to have gsheetIndex at 0 if error
-
-  if (!dialWithGoogle(nodeName, "getBadges", JsonStr)) return (false);
+  if (!dialWithGoogle(nodeName, F("getBadges"), JsonStr)) return (result);
   JSONVar jsonData = JSON.parse(JsonStr);
   uint16_t first = (int)jsonData["first"];
   uint16_t len = (int)jsonData["len"];
   uint16_t total = (int)jsonData["total"];
-  uint16_t baseIndex = (int)jsonData["baseindex"];
+  uint16_t baseVersion = (int)jsonData["baseversion"];
   bool eof = jsonData["eof"];
-  D_println(baseIndex);
+  D_println(baseVersion);
   D_println(total);
   D_println(first);
   D_println(len);
   D_println(eof);
   //D_println(JSON.typeof(jsonData["badges"]));
   D_println(helperFreeRam() + 02);
-  if (baseIndex != gsheetBaseIndex) {
+  if (currentBadgeVersion != baseVersion) {
     Serial.println(F("Abort lecture : new baseIndex"));
-    gsheetBaseIndex = baseIndex;
-    return (false);
+    distantBaseVersion = baseVersion; 
+    return (result);
   }
   File aFile = MyLittleFS.open(F("/badges.tmp"), "a");
-  if (!aFile) return false;
+  if (!aFile) return (result);
   if (first == 1) {
     JSONVar jsonHeader;
-    jsonHeader["baseindex"] = baseIndex;
+    jsonHeader["baseversion"] = baseVersion;
     jsonHeader["timestamp"] = (double)currentTime;
     jsonHeader["badgenumber"] = total;
     aFile.println(JSON.stringify(jsonHeader));
@@ -115,6 +100,7 @@ bool jobReadBadgesGSheet() {
 
     D_println(jsonData["badges"][N]);
     //Entre le 01/01/1970 et le 01/01/2000, il s'est écoulé 10957 jours soit 30 ans.
+    //transformation des date de validité de jours depuis 1/1/2000 en secondes depuis 1/1/1970
     time_t aDate = ((double)jsonData["badges"][N][2] + 10957) * 24 * 3600;
     jsonData["badges"][N][2] = (double)aDate;
     D_println((double)jsonData["badges"][N][2]);
@@ -131,7 +117,7 @@ bool jobReadBadgesGSheet() {
   aFile = MyLittleFS.open(F("/badges.tmp"), "r");
   if (!aFile) {
     D_println(F("TW: no saved config .conf !!!! "));
-    return (false);
+    return (result);
   }
   //  String aString = aFile.readStringUntil('\n');
   //  D_println(aString);  //aString => '{"baseindex":19,"timestamp":1633712861,"badgenumber":5}
@@ -139,22 +125,23 @@ bool jobReadBadgesGSheet() {
   aFile.close();
   if (!eof) {
     // il reste des badges a lire on relance une lecture dans 5 secondes
-    gsheetIndex = first + len;
-    Events.delayedPush(10000, evReadGSheet);
+    currentBadgeIndex = first + len;
+    result = 1;
   } else {
     MyLittleFS.remove(BADGE_FNAME);
     MyLittleFS.rename(F("/badges.tmp"), BADGE_FNAME);
-    Events.delayedPush(6 * 3600 * 1000, evCheckGSheet); // recheck in 6 hours
-    localBaseIndex = baseIndex;
+    Events.delayedPush(6 * 3600 * 1000, evCheckDistantBase); // recheck in 6 hours
+    badgesBaseVersion = currentBadgeVersion;
     Serial.print(F("New base "));
-    D_println(localBaseIndex);
+    D_println(badgesBaseVersion);
+    result = 0;
   }
   D_println(helperFreeRam() + 05);
-  return (true);
+  return (result);
 }
 
 // lecture de la version de la base sur la flash fichier badges.json
-bool jobGetBaseIndex() {
+bool jobGetBadgesVersion() {
   File aFile = MyLittleFS.open(BADGE_FNAME, "r");
   if (!aFile) return (false);
 
@@ -166,42 +153,68 @@ bool jobGetBaseIndex() {
   if (JSON.typeof(jsonHeader) != F("object")) return (false);
 
   // super check json data for "status" is a bool true  to avoid foolish data then supose all json data are ok.
-  if (!jsonHeader.hasOwnProperty("baseindex") || JSON.typeof(jsonHeader["baseindex"]) != F("number") ) {
+  if (!jsonHeader.hasOwnProperty("baseversion") || JSON.typeof(jsonHeader["baseversion"]) != F("number") ) {
     return (false);
   }
-  localBaseIndex = (int)jsonHeader["baseindex"];
-  gsheetBaseIndex = localBaseIndex;
-  D_println(localBaseIndex);
+  badgesBaseVersion = (int)jsonHeader["baseversion"];
+  distantBaseVersion = badgesBaseVersion;
+  D_println(badgesBaseVersion);
   return (true);
 
 }
 
-// lecture des plages horaire puis ecriture sur la flash fichier badges.json
-// plagehoraire est une named array de plage en json
-// en cas d'erreur retry 15 minutes  
-//
-bool jobReadPlagesGSheet() {
-    D_println(helperFreeRam() + 01);
-  if (!WiFiConnected) return false; 
-  Events.delayedPush(15 * 60 * 1000, evReadPlage); // reread in 15 min en cas d'erreur
-  Serial.print(F("jobReadPlagesGSheet at "));
-  //MyLittleFS.remove(F("/plage.tmp"));  // raz le fichier temp
-  String JsonStr = F("{\"max\":10");
-  if (!dialWithGoogle(nodeName, "getBadges", JsonStr)) return (false);
-  JSONVar jsonData = JSON.parse(JsonStr);
-  uint16_t length = (int)jsonData["length"];
-  uint16_t baseIndex = (int)jsonData["baseIndex"];
-  D_println(baseIndex);
-  D_println(length);
-  Events.removeDelayedPush(15 * 60 * 1000, evReadPlage); // reread in 15 min en cas d'erreur
-    if (baseIndex != gsheetBaseIndex) {
-    Serial.println(F("Abort lecture : new baseIndex"));
-    gsheetBaseIndex = baseIndex;
+// lecture de la version de la base sur la flash fichier plages.json
+bool jobGetPlagesVersion() {
+  File aFile = MyLittleFS.open(PLAGE_FNAME, "r");
+  if (!aFile) return (false);
+
+  String aString = aFile.readStringUntil('\n');
+  aFile.close();
+  D_println(aString);  //aString => '{"baseindex":19,"timestamp":1633712861,"badgenumber":5}
+
+  JSONVar jsonHeader = JSON.parse(aString);
+  if (JSON.typeof(jsonHeader) != F("object")) return (false);
+
+  // super check json data for "status" is a bool true  to avoid foolish data then supose all json data are ok.
+  if (!jsonHeader.hasOwnProperty("baseversion") || JSON.typeof(jsonHeader["baseversion"]) != F("number") ) {
     return (false);
   }
-  File aFile = MyLittleFS.open(F("/badges.tmp"), "a");
-  if (!aFile) return false;
+  plagesBaseVersion = (int)jsonHeader["baseversion"];
+  distantBaseVersion = plagesBaseVersion;
+  D_println(plagesBaseVersion);
+  return (true);
+}
 
+
+
+// lecture des plages horaire puis ecriture sur la flash fichier badges.json
+// plagehoraire est une named array de plage en json
+// en cas d'erreur retry 15 minutes
+//
+bool jobReadDistantPlages() {
+  D_println(helperFreeRam() + 01);
+  if (!WiFiConnected) return false;
+  //Events.delayedPush(15 * 60 * 1000, evReadPlage); // reread in 15 min en cas d'erreur
+  Serial.print(F("jobReadDistantPlages"));
+  //MyLittleFS.remove(F("/plage.tmp"));  // raz le fichier temp
+  String JsonStr = F("{\"max\":10");
+  if (!dialWithGoogle(nodeName, F("getPlagesHoraire"), JsonStr)) return (false);
+  JSONVar jsonData = JSON.parse(JsonStr);
+  uint16_t length = (int)jsonData["length"];
+  uint16_t baseVersion = (int)jsonData["baseversion"];
+  D_println(baseVersion);
+  D_println(length);
+  if (distantBaseVersion != baseVersion) {
+    Serial.println(F("Abort lecture : new baseIndex"));
+    distantBaseVersion = baseVersion;
+    return (false);
+  }
+  plagesBaseVersion = baseVersion;
+  File aFile = MyLittleFS.open(F("/badges.json"), "w");
+  if (!aFile) return false;
+  aFile.println(JsonStr);
+  aFile.close();
+  return(true);
 }
 
 
@@ -297,7 +310,7 @@ void JobSendHisto() {
   //    jsonData["liste"][N] = jsonLine;
   //  }
   //
-  uint16_t baseIndex;
+  uint16_t abaseVersion;
   time_t aTimeZone;
   { // jsonData String allocation
     String jsonStr = F("{\"liste\":[");
@@ -319,15 +332,15 @@ void JobSendHisto() {
     }
     JSONVar jsonData;
     jsonData = JSON.parse(jsonStr);
-    baseIndex = (int)jsonData["baseindex"];
+    abaseVersion = (int)jsonData["baseversion"];
     aTimeZone = (double)jsonData["timezone"];
   }  // jsonData String de allocation
 
-  D_println(baseIndex);
-  if ( localBaseIndex != baseIndex ) {
-    gsheetBaseIndex = baseIndex;
+  D_println(abaseVersion);
+  if ( abaseVersion != distantBaseVersion ) {
+    distantBaseVersion = abaseVersion;
     Serial.println(F("demande de relecture des données GSheet"));
-    Events.delayedPush(60 * 1000, evReadGSheet); // reread data from 0
+    Events.delayedPush(60 * 1000, evCheckDistantBase); // reread data from 0
   }
 
   // mise a jour de la time zone
@@ -444,7 +457,7 @@ void eraseConfig() {
 }
 
 
-String grabFromStringUntil(String &aString, const char aKey) {
+String grabFromStringUntil(String & aString, const char aKey) {
   String result;
   int pos = aString.indexOf(aKey);
   if ( pos == -1 ) {
@@ -458,13 +471,13 @@ String grabFromStringUntil(String &aString, const char aKey) {
   return (result);
 }
 
-void setMessage(const String& line2) {
-  messageL2 = line2.substring(0,16);
-  lcdRedraw=true;
-  Events.delayedPush(15*1000,evClearMessage);
+void setMessage(const String & line2) {
+  messageL2 = line2.substring(0, 16);
+  lcdRedraw = true;
+  Events.delayedPush(15 * 1000, evClearMessage);
 }
 
-void setMessage(const String& line1, const String& line2) {
-  messageL1 = line1.substring(0,16);
+void setMessage(const String & line1, const String & line2) {
+  messageL1 = line1.substring(0, 16);
   setMessage(line2);
 }

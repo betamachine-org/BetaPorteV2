@@ -2,7 +2,8 @@
  *************************************************
     Sketch BetaPorteV2.ino   Gestion d'un four de poterie
 
-    Copyright 20201 Pierre HENRY net23@frdev.com
+    Copyright 20201 Pierre HENRY net234@frdev.com
+    https://github.com/betamachine-org/BetaPorteV2   net234@frdev.com
 
   This file is part of BetaPorteV2.
 
@@ -62,13 +63,14 @@ enum tUserEventCode {
   evBP0 = 100,      // low = low power allowed
   evLed0,
   evLowPower,
-  evCloseDoor,      // timer desactiver le relai
-  evBlinkClock,     // clignotement pendule
-  evCheckBadge,  //timer lecture etat badge
+  evCloseDoor,          // timer desactiver le relai
+  evBlinkClock,         // clignotement pendule
+  evCheckBadge,         //timer lecture etat badge
   evBadgeIn,            // Arrivee du badge
   evBadgeOut,           // Sortie du badge
-  evCheckGSheet,        // simple check de la base normalement toute les 6 heures (5 minutes apres un acces)
-  evReadGSheet,         // demande de lecture de la gsheet (mmise a jour liste des badges)
+  evCheckDistantBase,   // simple check de la base normalement toute les 6 heures (5 minutes apres un acces)
+  evReadDistantBadges,   // lecture de la base distant (mmise a jour liste des badges)
+  evReadDistantPlages,   // lecture de la base distant (mmise a jour liste des plages horares)
   evSendHisto,
   evClearMessage,
   // evenement action
@@ -136,21 +138,19 @@ struct  {
 
 // Variable d'application locale
 String   nodeName = "NODE_NAME";    // nom de  la device (a configurer avec NODE=)"
-//String   GKey = "";         // clef google Sheet (a configurer avec GKEY=)"
+//String   GKey = "";               // clef google Sheet (a configurer avec GKEY=)"
+// clef lue localement dans dialWithGoogle pour economiser de la ram globale
 bool     badgePresent = false;
 bool     WiFiConnected = false;
 bool     lowPowerAllowed = false;
 bool     lowPowerActive = false;
 
 time_t   currentTime;
-int8_t   timeZone = -2;  //les heures sont toutes en localtimes
-uint16_t badgesBaseIndex = 0;  //version de la base badges en flash
-uint16_t palgesBaseIndex = 0;  //version de la base plages en flash
-uint16_t gsheetBaseIndex = 0;   //version derniere de la gsheet connue
-//uint16_t gsheetIndex = 0;       // position de la lecture en cours
-
-
-
+int8_t   timeZone = -2;          //les heures sont toutes en localtimes
+uint16_t badgesBaseVersion = 0;  //version de la base badges en flash
+uint16_t plagesBaseVersion = 0;  //version de la base plages en flash
+uint16_t distantBaseVersion = 0; //version derniere base distante connue
+//uint16_t distantBaseIndex = 0;   //position de la lecture base en cours (uniquement pour les badges)
 
 bool     configOk = true; // global used by getConfig...
 
@@ -265,7 +265,7 @@ void setup() {
     beep( 880, 500);
     delay(500);
   } else {
-    setMessage(F("Init Ok"),nodeName);
+    setMessage(F("Init Ok"), nodeName);
     // a beep
     beep( 880, 500);
     delay(500);
@@ -285,7 +285,8 @@ void loop() {
   {
     case evInit:
       Serial.println("Init");
-      jobGetBaseIndex();
+      jobGetBadgesVersion();
+      jobGetPlagesVersion();
       writeHisto(F("boot"), "");
       Events.delayedPush(5 * 1000, evCheckBadge); // lecture badges dans 5 secondes
       break;
@@ -330,7 +331,7 @@ void loop() {
               }
               lcd.setCursor(0, 1);
               String aStr = messageL2;
-              if (aStr.length() == 0) aStr=nodeName.substring(0,16);
+              if (aStr.length() == 0) aStr = nodeName.substring(0, 16);
               lcd.print(aStr);
               if (aStr.length() < 16) lcd.print(LCD_CLREOL);
               lcdRedraw = false;
@@ -382,7 +383,7 @@ void loop() {
             if (WiFiConnected) {
               setSyncProvider(getWebTime);
               setSyncInterval(6 * 3600);
-              Events.delayedPush(5 * 60 * 1000, evCheckGSheet);  // controle de la base dans 5 minutes
+              Events.delayedPush(5 * 60 * 1000, evCheckDistantBase);  // controle de la base dans 5 minutes
             }
             D_println(WiFiConnected);
             writeHisto( WiFiConnected ? F("wifi Connected") : F("wifi lost"), WiFi.SSID() );
@@ -447,7 +448,7 @@ void loop() {
     case evBadgeIn: {
         beep( 1047, 200);
         Events.delayedPush(2 * 1000, evCheckBadge); // on laisse du temps a l'application pour lire et transmettre au moins une fois
-        Events.delayedPush(5 * 60 * 1000, evCheckGSheet); // on controle la base dans 5 minutes
+        Events.delayedPush(5 * 60 * 1000, evCheckDistantBase); // on controle la base dans 5 minutes
 
         //leBadge = sBadge();
         // Affichage sur l'ecran
@@ -478,24 +479,71 @@ void loop() {
       }
       break;
 
-    // controle de la version de la Gsheet
-    case evCheckGSheet:
-      jobCheckGSheet();
-      break;
-
-    // relecture de la Gsheet : liste des badge et plage horaire
-    case evReadGSheet: {
-        Serial.println(F("evReadGSheet"));
-        if ( jobReadBadgesGSheet() ) {
-          //          localBaseIndex = gsheetBaseIndex;  // mise a jour de l'index base local
-          D_println(localBaseIndex);
-          D_println(gsheetBaseIndex);
-          D_println(gsheetIndex);
+    // controle de la version de la base distante
+    case evCheckDistantBase:  {
+        Serial.println(F("evCheckDistantBase"));
+        // si les base locales (badges et plages) sont a jous on lance une demande de version a la base distante (toute les 6 heures)
+        if (distantBaseVersion == badgesBaseVersion || distantBaseVersion == plagesBaseVersion) {
+          uint16_t aVersion = jobGetDistantBaseVersion();
+          if (aVersion == 0) {
+            Serial.println(F("Erreur acces base distante"));
+            Events.delayedPush(1 * 3600 * 1000, evCheckDistantBase); // recheck in 1 hours
+            break;
+          }
+          distantBaseVersion = aVersion;
+        }
+        // controle si les 2 bases sont a jours
+        if ( distantBaseVersion != badgesBaseVersion ) {
+          Serial.println(F("demande de relecture de la base badges"));
+          Events.delayedPush(10 * 1000, evReadDistantBadges, true); // reread data from 0
+        } else   if ( distantBaseVersion != plagesBaseVersion ) {
+          Serial.println(F("demande de relecture de la base plages"));
+          Events.delayedPush(10 * 1000, evReadDistantPlages );
         } else {
-          Serial.println("Erreur lecture Gsheet Badge");
+          // all ok re check in 6 hours
+          Events.delayedPush(6 * 3600 * 1000, evCheckDistantBase); // recheck in 6 hours
         }
       }
       break;
+
+    // relecture de la base distante des badge  cette base est lue par paquet de 50 elelments max
+    case evReadDistantBadges: {
+        Serial.println(F("evReadDistantBadges"));
+        // si event.ext est true on fait une lecture depuis le debut
+        uint8_t result = jobReadDistantBadges(Events.ext);
+        // result : 0 = done  1 = continu 2 = abandon
+        if (result == 0) {
+          // validation de la version
+          badgesBaseVersion = distantBaseVersion;
+          D_println(badgesBaseVersion);
+          writeHisto(F("Lecture badge Ok"),String(badgesBaseVersion));
+        } else if (result == 1) {
+          // il reste des elements a lire
+          Events.delayedPush(10 * 1000, evReadDistantBadges, false);
+          break;
+        } else {
+          writeHisto(F("Erreur lecture badge"),String(result));
+        }
+      }
+      break;
+
+
+    // relecture de la base distante des plages  cette base est lue en une seule fois
+    case evReadDistantPlages: {
+        Serial.println(F("evReadDistantPlages"));
+        if (jobReadDistantPlages()) {
+          // validation de la version
+          plagesBaseVersion = distantBaseVersion;
+          D_println(plagesBaseVersion);
+          writeHisto(F("Lecture plages Ok"),String(plagesBaseVersion));
+        } else {
+          writeHisto(F("Erreur lecture plages"),"");
+        }
+      }
+      break;
+
+
+
     case evSendHisto: {
         Serial.println(F("evSendHisto"));
         JobSendHisto();
@@ -652,11 +700,18 @@ void loop() {
         }
       }
 
-      if (Keyboard.inputString.equals(F("READ"))) {
-        bool jReadBadgesGSheet = jobReadBadgesGSheet();
-        D_println(jReadBadgesGSheet);
+      if (Keyboard.inputString.equals(F("RBADGE"))) {
+        bool jReadDistantBadges = jobReadDistantBadges(true);
+        D_println(jReadDistantBadges);
       }
       break;
+
+      if (Keyboard.inputString.equals(F("RPLAGE"))) {
+        bool jReadDistantPlages = jobReadDistantPlages();
+        D_println(jReadDistantPlages);
+      }
+      break;
+
   }
 }
 

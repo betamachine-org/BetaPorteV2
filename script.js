@@ -1,6 +1,31 @@
+/////////////////////////////////////////////////////////////////////////////////
+// code.gs pour betaporte V2 Betamachine (C) pierre henry 2020  net234@frdev.com
+// https://github.com/betamachine-org/BetaPorteV2   net234@frdev.com
+//
+//  This file is part of BetaPorteV2   
+//
+//    BetaPorteV2 is free software: you can redistribute it and/or modify
+//    it under the terms of the GNU Lesser General Public License as published by
+//    the Free Software Foundation, either version 3 of the License, or
+//    (at your option) any later version.
+//
+//    BetaPorteV2 is distributed in the hope that it will be useful,
+//    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//    GNU General Public License for more details.
+//
+//    You should have received a copy of the GNU Lesser General Public License
+//    along with betaEvents.  If not, see <https://www.gnu.org/licenses/lglp.txt>.
+//
+//   todo gerer les max sur getPlagesHoraires
+//   todo add try and catch pour toutt le code des fonction de traitement des actions
+//   todo bug mineur : l'heure de changement de la time zone est 02H00 au lieu de 03H00 (local time france)
+//
+//////////////////////////////////////////////////////////////////////////////////
+
+//action appelée a chaque https://script.google.com/macros/s/"ID_de_déploiement"/exec
 function doGet(parametres) {
   try {
-
     var node = parametres.parameter.node;       // identificateur unique de la device emetrice ex : node01
     if (!node) throw 'bad device';  // doesnt use node 
     var action = parametres.parameter.action;        // nom de l'evenerment :  ex BP0
@@ -26,11 +51,8 @@ function doGet(parametres) {
   // indique la version de la base
   var range = SpreadsheetApp.getActiveSpreadsheet().getRangeByName('BaseInfo');
   var values = range.getValues();
-  var baseIndex = values[0][0];
-  //values[1][0] = baseInfo;     // signale la version lue
-  //values[1][1] = excelLocalDate(); // signale la date de lecture
-  //range.setValues(values);
-
+  var baseVersion = values[0][0];
+ 
   var eventJSON = {
     'status': true,
     'message': 'Ok',
@@ -45,11 +67,11 @@ function doGet(parametres) {
     var result = {
       'timestamp': timeStamp,
       'timezone': timeZone,
-      'baseindex': baseIndex,
+      'baseversion': baseVersion,
     }
 
     eventJSON.answer = result;
-    sheet.getRange(newRow, 6).setValue('baseIndex=' + baseIndex + ' timeZone=' + timeZone);
+    sheet.getRange(newRow, 6).setValue('baseVersion=' + baseVersion + ' timeZone=' + timeZone);
     sheet.getRange(newRow, 5).setValue('Ok');
     return ContentService.createTextOutput(JSON.stringify(eventJSON)).setMimeType(ContentService.MimeType.JSON);
   }
@@ -65,13 +87,13 @@ function doGet(parametres) {
     // transformation en named array sur les noms de la premiere collone
     // 
     for (N = 0; N < plagesData.length; N++) {
-      var data = plagesData[N];
+      var data  = plagesData[N];
       var name = data.shift();
       plages[name] = data;
     }
 
     var result = {
-      'baseindex': baseIndex,
+      'baseversion': baseVersion,
       'length': Object.keys(plages).length,
       'plages': plages,
     }
@@ -101,12 +123,12 @@ function doGet(parametres) {
     if (first < 1) first = 1;
 
     //marque la version en cours de lecture uniquement si on est en debut de lecture
-    var range = SpreadsheetApp.getActiveSpreadsheet().getRangeByName('BaseInfo');
+    var range = SpreadsheetApp.getActiveSpreadsheet().getRangeByName('BaseVersion');
     var values = range.getValues();
-    var baseIndex = values[0][0];
+    var baseversion = values[0][0];
     if (first == 1) {
       values[1][1] = date;
-      values[1][0] = baseIndex;
+      values[1][0] = baseVersion;
       range.setValues(values);
     }
 
@@ -117,7 +139,7 @@ function doGet(parametres) {
     var len = max;
     if (first - 1 + len > totalBadges) len = totalBadges - first + 1;
 
-    sheet.getRange(newRow, 6).setValue(len + ' badges (' + first + '-' + (first + len - 1) + ') base index=' + baseIndex);
+    sheet.getRange(newRow, 6).setValue(len + ' badges (' + first + '-' + (first + len - 1) + ') base index=' + baseversion);
 
 
     var badges;
@@ -131,9 +153,9 @@ function doGet(parametres) {
       }
     }
     var result = {
-      'baseindex': baseIndex,
+      'baseversion': baseVersion,
       'first': first,
-      'len': len,
+      'length': len,
       'total': totalBadges,
       'eof': (first - 1 + len >= totalBadges),
       'badges': badges,
@@ -197,12 +219,12 @@ function doGet(parametres) {
         var result = {
           'timestamp': timeStamp,
           'timezone': timeZone,
-          'baseindex': baseIndex,
+          'baseVersion': baseVersion,
         }
 
         eventJSON.answer = result;
 
-        var values = [['baseIndex=' + baseIndex + ' timeZone=' + timeZone + ' histo len=' + params.liste.length, date]];
+        var values = [['baseVersion=' + baseVersion + ' timeZone=' + timeZone + ' histo len=' + params.liste.length, date]];
         sheet.getRange(newRow, 6, 1, 2).setValues(values);
 
       }
@@ -213,7 +235,7 @@ function doGet(parametres) {
 
 
 
-
+ 
   sheet.getRange(newRow, 5).setValue('Err action : ' + action);
 
   var eventJSON = {
@@ -237,22 +259,24 @@ function onChange(e) {
   //   for( i in e )
   //    Logger.log( i );
   // indique une nouvelle version
-  var range = SpreadsheetApp.getActiveSpreadsheet().getRangeByName('BaseInfo');
+  var range = SpreadsheetApp.getActiveSpreadsheet().getRangeByName('BaseVersion');
   var values = range.getValues();
   var checkWrite = values[0][0];
   var checkRead = values[1][0];
+  // changement de version uniquement si cette version a été lue par un node
   if (checkWrite <= checkRead) {
-    // increment base index
+    // increment base version
     checkWrite = checkRead + 1;
     values[0][0] = checkWrite;
     // enregistre dans rowdata le changement de version
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('RowData');
     var newRow = sheet.getLastRow() + 1;
     var date = new Date();  // javascript date 
-    var rowValues = [[date, 'gsheet', 'baseIndexChange', 'baseIndex=' + checkWrite, 'Ok']];
+    var rowValues = [[date, 'gsheet', 'baseVersionChange', 'baseVersion=' + checkWrite, 'Ok']];
     sheet.getRange(newRow, 1, 1, 5).setValues(rowValues);
 
   }
+  // ajuste la date de changement dans tout les cas
   values[0][1] = new Date();
   range.setValues(values);
 
@@ -271,12 +295,11 @@ function jsDate(aUnixTimeStamp) {
   return new Date((aUnixTimeStamp + (new Date().getTimezoneOffset() * 60)) * 1000);
 }
 
+//astuce pour limiter la taille des données transmises : la dates de validité des badges sont transmises en jours depuis 1/1/2000 plutot qu'en secondes depui 1/1/1970
 //Entre le 01/01/1970 et le 01/01/2000, il s'est écoulé 10957 jours soit 30 ans.
-
-
 function unixDaysFrom2000(aExeclDate) {
   if (!aExeclDate) aExeclDate = new Date();
-  return Math.floor((aExeclDate.getTime() - new Date(2000, 12, 1).getTime()) / (1000 * 3600 * 24));
+  return Math.floor( (aExeclDate.getTime() - new Date(2000, 12, 1).getTime()) / (1000 * 3600 * 24) );
 }
 
 
