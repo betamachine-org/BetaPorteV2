@@ -6,6 +6,7 @@
 
 #define SHEET_SERVER  "script.google.com"
 // need about 30K of ram !!!!!! WiFiClientSecure
+// todo return better errcode
 bool dialWithGoogle(const String& aNode, const String& aAction, String& jsonParam ) {
   // (global) HTTPClient http;  //Declare an object of class HTTPClient
   Serial.print(F("Dial With gSheet as '"));
@@ -38,11 +39,11 @@ bool dialWithGoogle(const String& aNode, const String& aAction, String& jsonPara
     bigString += encodeUri(jsonParam);
   }
   D_println(bigString.length());
-
-  D_println(helperFreeRam() + 0001);
+  //D_println(bigString);
+  //D_println(helperFreeRam() + 0001);
   {
     WiFiClientSecure wifiSecure;   // 7K
-    D_println(helperFreeRam() + 0002);
+    //D_println(helperFreeRam() + 0002);
 
     HTTPClient http;  //Declare an object of class HTTPClient (Gsheet and webclock)
     http.setTimeout(15000); // 10 Seconds   (could be long with google)
@@ -77,11 +78,11 @@ bool dialWithGoogle(const String& aNode, const String& aAction, String& jsonPara
     uint8_t antiLoop = 0;
     while (httpCode == 302 && antiLoop++ < 3) {
       // google will give answer in relocation
-      D_println(helperFreeRam() + (0 * 31) );
+      //D_println(helperFreeRam() + (0 * 31) );
       bigString = http.header(headerKeys[0]);
       http.getString();   //Get the request response payload
       http.end();   //Close connection (got err -7 if not)
-      D_println(helperFreeRam() + (0 * 32) );
+      //D_println(helperFreeRam() + (0 * 32) );
       D_println(bigString.length());
       http.begin(wifiSecure, bigString); //Specify request new destination
       http.collectHeaders(headerKeys, numberOfHeaders);
@@ -103,14 +104,15 @@ bool dialWithGoogle(const String& aNode, const String& aAction, String& jsonPara
       return (false);
     }
 
-    D_println(helperFreeRam() + (0 * 04));
+    //D_println(helperFreeRam() + (0 * 04));
     bigString = http.getString();   //Get the request response payload
-    D_println(helperFreeRam() + (0 * 05));
+    //D_println(helperFreeRam() + (0 * 05));
     http.end();   //Close connection (restore 22K of ram)
   }
 
   D_println(helperFreeRam() + (0 * 06))
   D_println(bigString.length());             //Print the response payload
+  //D_println(bigString);
   // check json string without real json lib  not realy good but use less memory and faster
   int16_t answerPos = bigString.indexOf(F(",\"answer\":{"));
   if ( !bigString.startsWith(F("{\"status\":true,")) || answerPos < 0 ) {

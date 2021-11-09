@@ -483,7 +483,7 @@ void loop() {
     case evCheckDistantBase:  {
         Serial.println(F("evCheckDistantBase"));
         // si les base locales (badges et plages) sont a jous on lance une demande de version a la base distante (toute les 6 heures)
-        if (distantBaseVersion == badgesBaseVersion || distantBaseVersion == plagesBaseVersion) {
+        if (distantBaseVersion == badgesBaseVersion && distantBaseVersion == plagesBaseVersion) {
           uint16_t aVersion = jobGetDistantBaseVersion();
           if (aVersion == 0) {
             Serial.println(F("Erreur acces base distante"));
@@ -496,10 +496,10 @@ void loop() {
         if ( distantBaseVersion != badgesBaseVersion ) {
           Serial.println(F("demande de relecture de la base badges"));
           Events.delayedPush(10 * 1000, evReadDistantBadges, true); // reread data from 0
-        } else   if ( distantBaseVersion != plagesBaseVersion ) {
+        } else         if ( distantBaseVersion != plagesBaseVersion ) {
           Serial.println(F("demande de relecture de la base plages"));
           Events.delayedPush(10 * 1000, evReadDistantPlages );
-        } else {
+        } else   {
           // all ok re check in 6 hours
           Events.delayedPush(6 * 3600 * 1000, evCheckDistantBase); // recheck in 6 hours
         }
@@ -516,13 +516,13 @@ void loop() {
           // validation de la version
           badgesBaseVersion = distantBaseVersion;
           D_println(badgesBaseVersion);
-          writeHisto(F("Lecture badge Ok"),String(badgesBaseVersion));
+          writeHisto(F("Lecture badge Ok"), String(badgesBaseVersion));
         } else if (result == 1) {
           // il reste des elements a lire
           Events.delayedPush(10 * 1000, evReadDistantBadges, false);
           break;
         } else {
-          writeHisto(F("Erreur lecture badge"),String(result));
+          writeHisto(F("Erreur lecture badge"), String(result));
         }
       }
       break;
@@ -535,9 +535,9 @@ void loop() {
           // validation de la version
           plagesBaseVersion = distantBaseVersion;
           D_println(plagesBaseVersion);
-          writeHisto(F("Lecture plages Ok"),String(plagesBaseVersion));
+          writeHisto(F("Lecture plages Ok"), String(plagesBaseVersion));
         } else {
-          writeHisto(F("Erreur lecture plages"),"");
+          writeHisto(F("Erreur lecture plages"), "");
         }
       }
       break;
@@ -692,19 +692,13 @@ void loop() {
       }
 
       if (Keyboard.inputString.equals(F("CHECK"))) {
-        String jsonData;
-        if (!dialWithGoogle(nodeName, F("check"), jsonData)) {
-          Serial.println(F("Erreur check"));
-        } else {
-          Serial.println(F("check Ok"));
-        }
+        Events.push(evCheckDistantBase);
       }
 
       if (Keyboard.inputString.equals(F("RBADGE"))) {
         bool jReadDistantBadges = jobReadDistantBadges(true);
         D_println(jReadDistantBadges);
       }
-      break;
 
       if (Keyboard.inputString.equals(F("RPLAGE"))) {
         bool jReadDistantPlages = jobReadDistantPlages();

@@ -49,7 +49,7 @@ function doGet(parametres) {
   var values = [[date, node, action, shortParam, '??']];
   sheet.getRange(newRow, 1, 1, 5).setValues(values);
   // indique la version de la base
-  var range = SpreadsheetApp.getActiveSpreadsheet().getRangeByName('BaseInfo');
+  var range = SpreadsheetApp.getActiveSpreadsheet().getRangeByName('BaseVersion');
   var values = range.getValues();
   var baseVersion = values[0][0];
  
@@ -219,7 +219,7 @@ function doGet(parametres) {
         var result = {
           'timestamp': timeStamp,
           'timezone': timeZone,
-          'baseVersion': baseVersion,
+          'baseversion': baseVersion,
         }
 
         eventJSON.answer = result;

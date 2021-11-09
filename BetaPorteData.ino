@@ -53,10 +53,10 @@ uint8_t jobReadDistantBadges(const bool fromStart) {
 
   D_println(helperFreeRam() + (0 * 01));
   static uint16_t currentBadgeIndex = 0;
-  static uint16_t currentBadgeVersion = 0;  
+  static uint16_t currentBadgeVersion = 0;
   if (fromStart) {
     currentBadgeIndex = 0;
-    currentBadgeVersion = distantBaseVersion;  
+    currentBadgeVersion = distantBaseVersion;
     MyLittleFS.remove(F("/badges.tmp"));  // raz le fichier temp
   }
   Serial.print(F("jobReadDistantBadges at "));
@@ -69,7 +69,7 @@ uint8_t jobReadDistantBadges(const bool fromStart) {
   if (!dialWithGoogle(nodeName, F("getBadges"), JsonStr)) return (result);
   JSONVar jsonData = JSON.parse(JsonStr);
   uint16_t first = (int)jsonData["first"];
-  uint16_t len = (int)jsonData["len"];
+  uint16_t len = (int)jsonData["length"];
   uint16_t total = (int)jsonData["total"];
   uint16_t baseVersion = (int)jsonData["baseversion"];
   bool eof = jsonData["eof"];
@@ -79,10 +79,10 @@ uint8_t jobReadDistantBadges(const bool fromStart) {
   D_println(len);
   D_println(eof);
   //D_println(JSON.typeof(jsonData["badges"]));
-  D_println(helperFreeRam() + 02);
+  //D_println(helperFreeRam() + 02);
   if (currentBadgeVersion != baseVersion) {
     Serial.println(F("Abort lecture : new baseIndex"));
-    distantBaseVersion = baseVersion; 
+    distantBaseVersion = baseVersion;
     return (result);
   }
   File aFile = MyLittleFS.open(F("/badges.tmp"), "a");
@@ -91,11 +91,11 @@ uint8_t jobReadDistantBadges(const bool fromStart) {
     JSONVar jsonHeader;
     jsonHeader["baseversion"] = baseVersion;
     jsonHeader["timestamp"] = (double)currentTime;
-    jsonHeader["badgenumber"] = total;
+    jsonHeader["length"] = total;
     aFile.println(JSON.stringify(jsonHeader));
-    D_println(helperFreeRam() + 03);
+    //D_println(helperFreeRam() + 03);
   }
-  D_println(helperFreeRam() + 04);
+  //D_println(helperFreeRam() + 04);
   for (int N = 0 ; N < len ; N++ ) {
 
     D_println(jsonData["badges"][N]);
@@ -120,7 +120,7 @@ uint8_t jobReadDistantBadges(const bool fromStart) {
     return (result);
   }
   //  String aString = aFile.readStringUntil('\n');
-  //  D_println(aString);  //aString => '{"baseindex":19,"timestamp":1633712861,"badgenumber":5}
+  //  D_println(aString);  //aString => '{"baseindex":19,"timestamp":1633712861,"length":5}
 
   aFile.close();
   if (!eof) {
@@ -147,7 +147,7 @@ bool jobGetBadgesVersion() {
 
   String aString = aFile.readStringUntil('\n');
   aFile.close();
-  D_println(aString);  //aString => '{"baseindex":19,"timestamp":1633712861,"badgenumber":5}
+  D_println(aString);  //aString => '{"baseindex":19,"timestamp":1633712861,"length":5}
 
   JSONVar jsonHeader = JSON.parse(aString);
   if (JSON.typeof(jsonHeader) != F("object")) return (false);
@@ -170,7 +170,7 @@ bool jobGetPlagesVersion() {
 
   String aString = aFile.readStringUntil('\n');
   aFile.close();
-  D_println(aString);  //aString => '{"baseindex":19,"timestamp":1633712861,"badgenumber":5}
+  D_println(aString);  //aString => '{"baseindex":19,"timestamp":1633712861,"length":5}
 
   JSONVar jsonHeader = JSON.parse(aString);
   if (JSON.typeof(jsonHeader) != F("object")) return (false);
@@ -197,7 +197,7 @@ bool jobReadDistantPlages() {
   //Events.delayedPush(15 * 60 * 1000, evReadPlage); // reread in 15 min en cas d'erreur
   Serial.print(F("jobReadDistantPlages"));
   //MyLittleFS.remove(F("/plage.tmp"));  // raz le fichier temp
-  String JsonStr = F("{\"max\":10");
+  String JsonStr = F("{\"max\":10}");
   if (!dialWithGoogle(nodeName, F("getPlagesHoraire"), JsonStr)) return (false);
   JSONVar jsonData = JSON.parse(JsonStr);
   uint16_t length = (int)jsonData["length"];
@@ -210,11 +210,11 @@ bool jobReadDistantPlages() {
     return (false);
   }
   plagesBaseVersion = baseVersion;
-  File aFile = MyLittleFS.open(F("/badges.json"), "w");
+  File aFile = MyLittleFS.open(PLAGE_FNAME, "w");
   if (!aFile) return false;
   aFile.println(JsonStr);
   aFile.close();
-  return(true);
+  return (true);
 }
 
 
@@ -228,22 +228,23 @@ badgeMode_t jobCheckBadge(const String aUUID) {
   //enum badgeMode_t {bmInvalide, bmBadDate, bmBadTime ,bmOk, bmBaseErreur bmMAX };
   File aFile = MyLittleFS.open(BADGE_FNAME, "r");
   if (!aFile) return (bmBaseErreur);
+  aFile.setTimeout(5);
   String aString = aFile.readStringUntil('\n');
 
-  //D_println(aString);  //aString => '{"baseindex":19,"timestamp":1633712861,"badgenumber":5}
+  //D_println(aString);  //aString => '{"baseindex":19,"timestamp":1633712861,"length":5}
 
   JSONVar jsonHeader = JSON.parse(aString);
   if (JSON.typeof(jsonHeader) != F("object")) return (bmBaseErreur);
 
-  if (!jsonHeader.hasOwnProperty("badgenumber") || JSON.typeof(jsonHeader["badgenumber"]) != F("number") ) {
+  if (!jsonHeader.hasOwnProperty("length") || JSON.typeof(jsonHeader["length"]) != F("number") ) {
     return (bmBaseErreur);
   }
-  int badgeNumber = jsonHeader["badgenumber"];
-  D_println(badgeNumber);
+  int len = jsonHeader["length"];
+  D_println(len);
   int N = 0;
-  while (N < badgeNumber ) {
+  while (N < len ) {
     aString = aFile.readStringUntil('\n');
-    //  D_println(aString);
+    //D_println(aString);
     JSONVar jsonLine = JSON.parse(aString);
     //jsonLine[0] UUid
     //jsonLine[1] pseudo
@@ -330,6 +331,7 @@ void JobSendHisto() {
       aFile.close();
       return;
     }
+    D_println(jsonStr);
     JSONVar jsonData;
     jsonData = JSON.parse(jsonStr);
     abaseVersion = (int)jsonData["baseversion"];
@@ -337,10 +339,10 @@ void JobSendHisto() {
   }  // jsonData String de allocation
 
   D_println(abaseVersion);
-  if ( abaseVersion != distantBaseVersion ) {
-    distantBaseVersion = abaseVersion;
-    Serial.println(F("demande de relecture des données GSheet"));
-    Events.delayedPush(60 * 1000, evCheckDistantBase); // reread data from 0
+  if ( abaseVersion != distantBaseVersion ) distantBaseVersion = abaseVersion;
+  if (distantBaseVersion != badgesBaseVersion || distantBaseVersion != plagesBaseVersion) {
+    Serial.println(F("demande de relecture de la base distante"));
+    Events.delayedPush(60 * 1000, evCheckDistantBase);
   }
 
   // mise a jour de la time zone
