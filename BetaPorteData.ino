@@ -250,13 +250,19 @@ badgeMode_t jobCheckBadge(const String aUUID) {
     //jsonLine[1] pseudo
     //jsonLine[2] date debut en jour
     //jsonLine[3] date fin en jours
+    //jsonLine[4] plage
+    //jsonLine[5] autorisation
     if ( JSON.typeof(jsonLine) == F("array") && jsonLine[0] == aUUID ) {
       aFile.close();
-      D_println(niceDisplayTime((double)jsonLine[2]));
-      D_println(niceDisplayTime(currentTime));
-      D_println(niceDisplayTime((double)jsonLine[3]));
-      if (currentTime < (double)jsonLine[2] || currentTime > (double)jsonLine[3]) {
-        return (bmBadDate);
+      String autorisation = (const char *)jsonLine[5];
+      D_println(autorisation);
+      if (autorisation.indexOf(F("PERM")) < 0) {
+        D_println(niceDisplayTime((double)jsonLine[2]));
+        D_println(niceDisplayTime(currentTime));
+        D_println(niceDisplayTime((double)jsonLine[3]));
+        if (currentTime < (double)jsonLine[2] || currentTime > (double)jsonLine[3]) {
+          return (bmBadDate);
+        }
       }
       Serial.print(F("Match "));
       D_println((const char*)jsonLine[1]);
