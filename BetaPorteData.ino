@@ -225,7 +225,7 @@ bool jobReadDistantPlages() {
 
 // verification de la validité d'un badge dans la base sur la flash fichier badges.json
 badgeMode_t jobCheckBadge(const String aUUID) {
-  //enum badgeMode_t {bmInvalide, bmBadDate, bmBadTime ,bmOk, bmBaseErreur bmMAX };
+  //enum badgeMode_t {bmOk, bmBadDate, bmBadTime, bmInvalide, bmBaseErreur, bmMAX };
   File aFile = MyLittleFS.open(BADGE_FNAME, "r");
   if (!aFile) return (bmBaseErreur);
   aFile.setTimeout(5);
