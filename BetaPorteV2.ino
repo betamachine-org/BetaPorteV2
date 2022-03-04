@@ -87,7 +87,8 @@ enum tUserEventCode {
 //  Keyboard genere un evenement evChar a char caractere recu et un evenement evString a chaque ligne recue
 //  Debug permet sur reception d'un "T" sur l'entrée Serial d'afficher les infos de charge du CPU
 
-//#define pinBP0 BP0_PIN
+//#define DEFAULT_PIN
+// les sortie pour la led et le poussoir sont definis dans esp8266.h avec BP0_PIN  et LED0_PIN
 #include <BetaEvents.h>
 
 

@@ -19,7 +19,8 @@
 #define D8  15    //!BOOT_STS            
 
 #define BP0_PIN   D7                 //  High to Low = will wleep in, 5 minutes 
-//#define pinLed0  LED_BUILTIN   //   By default Led0 is on LED_BUILTIN you can change it
+#define LED0_PIN  LED_BUILTIN   //   By default Led0 is on LED_BUILTIN you can change it
+
 #define I2C_SDA  D2
 #define I2C_SCL  D1
 
