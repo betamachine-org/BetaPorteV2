@@ -274,7 +274,7 @@ void setup() {
     delay(500);
     beep( 1047, 500);
   }
-  D_println(helperFreeRam());
+  D_println(Events.freeRam());
 }
 
 String niceDisplayTime(const time_t time, bool full = false);
@@ -557,7 +557,7 @@ void loop() {
       break;
 
     case doReset:
-      helperReset();
+      Events.reset();
       break;
 
     case evLowPower:
@@ -637,7 +637,7 @@ void loop() {
           D_println(nodeName);
           jobSetConfigStr(F("nodename"), nodeName);
           delay(1000);
-          helperReset();
+          Events.reset();
         }
       }
 
@@ -679,7 +679,7 @@ void loop() {
         Events.push(doReset);
       }
       if (Keyboard.inputString.equals(F("FREE"))) {
-        D_println(helperFreeRam());
+        D_println(Events.freeRam());
       }
       if (Keyboard.inputString.equals("S")) {
         sleepOk = !sleepOk;
@@ -689,7 +689,7 @@ void loop() {
         Serial.println(F("RAZCONF this will reset"));
         eraseConfig();
         delay(1000);
-        helperReset();
+        Events.reset();
       }
 
       if (Keyboard.inputString.equals(F("CHECK"))) {
@@ -756,7 +756,7 @@ void fatalError(const uint8_t error) {
     delay(500);
   }
   delay(2000);
-  helperReset();
+  Events.reset();
 }
 
 

@@ -51,7 +51,7 @@ uint8_t jobReadDistantBadges(const bool fromStart) {
   uint8_t result = 2; // result : 0 = done  1 = continu 2 = abandon
   if (!WiFiConnected) return result;  // we need to have gsheetIndex at 0 if error
 
-  D_println(helperFreeRam() + (0 * 01));
+  D_println(Events.freeRam() + (0 * 01));
   static uint16_t currentBadgeIndex = 0;
   static uint16_t currentBadgeVersion = 0;
   if (fromStart) {
@@ -79,7 +79,7 @@ uint8_t jobReadDistantBadges(const bool fromStart) {
   D_println(len);
   D_println(eof);
   //D_println(JSON.typeof(jsonData["badges"]));
-  //D_println(helperFreeRam() + 02);
+  //D_println(Events.freeRam() + 02);
   if (currentBadgeVersion != baseVersion) {
     Serial.println(F("Abort lecture : new baseIndex"));
     distantBaseVersion = baseVersion;
@@ -93,9 +93,9 @@ uint8_t jobReadDistantBadges(const bool fromStart) {
     jsonHeader["timestamp"] = (double)currentTime;
     jsonHeader["length"] = total;
     aFile.println(JSON.stringify(jsonHeader));
-    //D_println(helperFreeRam() + 03);
+    //D_println(Events.freeRam() + 03);
   }
-  //D_println(helperFreeRam() + 04);
+  //D_println(Events.freeRam() + 04);
   for (int N = 0 ; N < len ; N++ ) {
 
     D_println(jsonData["badges"][N]);
@@ -136,7 +136,7 @@ uint8_t jobReadDistantBadges(const bool fromStart) {
     D_println(badgesBaseVersion);
     result = 0;
   }
-  D_println(helperFreeRam() + 05);
+  D_println(Events.freeRam() + 05);
   return (result);
 }
 
@@ -192,7 +192,7 @@ bool jobGetPlagesVersion() {
 // en cas d'erreur retry 15 minutes
 //
 bool jobReadDistantPlages() {
-  D_println(helperFreeRam() + 01);
+  D_println(Events.freeRam() + 01);
   if (!WiFiConnected) return false;
   //Events.delayedPush(15 * 60 * 1000, evReadPlage); // reread in 15 min en cas d'erreur
   Serial.print(F("jobReadDistantPlages"));

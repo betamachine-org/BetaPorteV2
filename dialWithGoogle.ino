@@ -14,8 +14,8 @@ bool dialWithGoogle(const String& aNode, const String& aAction, String& jsonPara
   Serial.print(':');
   Serial.print(aAction);
   Serial.println('\'');
-  D_println(helperFreeRam() + 000);
-  if (helperFreeRam() < 41000) {
+  D_println(Events.freeRam() + 000);
+  if (Events.freeRam() < 41000) {
     Serial.println(F("https need more memory"));
     return (false);
   }
@@ -40,10 +40,10 @@ bool dialWithGoogle(const String& aNode, const String& aAction, String& jsonPara
   }
   D_println(bigString.length());
   //D_println(bigString);
-  //D_println(helperFreeRam() + 0001);
+  //D_println(Events.freeRam() + 0001);
   {
     WiFiClientSecure wifiSecure;   // 7K
-    //D_println(helperFreeRam() + 0002);
+    //D_println(Events.freeRam() + 0002);
 
     HTTPClient http;  //Declare an object of class HTTPClient (Gsheet and webclock)
     http.setTimeout(15000); // 10 Seconds   (could be long with google)
@@ -55,7 +55,7 @@ bool dialWithGoogle(const String& aNode, const String& aAction, String& jsonPara
     const char * headerKeys[] = {"location"} ;
     const size_t numberOfHeaders = 1;
     http.collectHeaders(headerKeys, numberOfHeaders);
-    //D_println(helperFreeRam() + 01);
+    //D_println(Events.freeRam() + 01);
     int httpCode = http.GET();//Send the request  (gram 22K of ram)
 
     /*** HTTP client errors
@@ -74,15 +74,15 @@ bool dialWithGoogle(const String& aNode, const String& aAction, String& jsonPara
     */
 
     D_println(httpCode);
-    D_println(helperFreeRam() + ( 0 * 02));
+    D_println(Events.freeRam() + ( 0 * 02));
     uint8_t antiLoop = 0;
     while (httpCode == 302 && antiLoop++ < 3) {
       // google will give answer in relocation
-      //D_println(helperFreeRam() + (0 * 31) );
+      //D_println(Events.freeRam() + (0 * 31) );
       bigString = http.header(headerKeys[0]);
       http.getString();   //Get the request response payload
       http.end();   //Close connection (got err -7 if not)
-      //D_println(helperFreeRam() + (0 * 32) );
+      //D_println(Events.freeRam() + (0 * 32) );
       D_println(bigString.length());
       http.begin(wifiSecure, bigString); //Specify request new destination
       http.collectHeaders(headerKeys, numberOfHeaders);
@@ -104,13 +104,13 @@ bool dialWithGoogle(const String& aNode, const String& aAction, String& jsonPara
       return (false);
     }
 
-    //D_println(helperFreeRam() + (0 * 04));
+    //D_println(Events.freeRam() + (0 * 04));
     bigString = http.getString();   //Get the request response payload
-    //D_println(helperFreeRam() + (0 * 05));
+    //D_println(Events.freeRam() + (0 * 05));
     http.end();   //Close connection (restore 22K of ram)
   }
 
-  D_println(helperFreeRam() + (0 * 06))
+  D_println(Events.freeRam() + (0 * 06))
   D_println(bigString.length());             //Print the response payload
   //D_println(bigString);
   // check json string without real json lib  not realy good but use less memory and faster
@@ -121,7 +121,7 @@ bool dialWithGoogle(const String& aNode, const String& aAction, String& jsonPara
   // hard cut of "answer":{ xxxxxx } //
   jsonParam = bigString.substring(answerPos + 10, bigString.length() - 1);
   D_println(jsonParam.length());
-  D_println(helperFreeRam() + 001);
+  D_println(Events.freeRam() + 001);
   return (true);
 }
 
