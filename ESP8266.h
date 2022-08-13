@@ -13,7 +13,7 @@
 #define D3  0     //!FLASH    BEEP_PIN
 #define D4  2     //!LED2     PN532_POWER_PIN
 
-#define D5  14    //!SPI_CLK   
+#define D5  14    //!SPI_CLK    Entrée porte verouillée
 #define D6  12    //!SPI_MISO   GACHE_PIN
 #define D7  13    //!SPI_MOSI   BP0_PIN
 #define D8  15    //!BOOT_STS            

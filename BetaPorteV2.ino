@@ -33,9 +33,11 @@
     V2.0.3 (29/03/2022)
     Correction pour betaEvents V2.3
     Correction bug perte de config sur changement d'horaire
-    Meilleur de tection d'une absence de config
-    
-    
+    Meilleur de detection d'une absence de config
+    V2.1.0 (13/08/2022)
+    Gestion des betaporte escalve via UDP
+    Gestion de la confirmation de la fermeture de la porte via le port
+
 
 *************************************************/
 
@@ -168,6 +170,13 @@ bool     displayClock;
 bool     configErr = false;
 enum badgeMode_t {bmOk, bmBadDate, bmBadTime, bmInvalide, bmBaseErreur, bmMAX };
 //badgeMode_t badgeMode = bmInvalide;
+
+#include <WiFiUdp.h>
+// port d'ecoute UDP
+const unsigned int localUdpPort = 23423;      // local port to listen on
+//Objet UDP pour la liaison avec la console
+WiFiUDP MyUDP;
+
 
 void setup() {
   enableWiFiAtBootTime();   // obligatoire pour lekernel ESP > 3.0
@@ -391,6 +400,9 @@ void loop() {
               setSyncProvider(getWebTime);
               setSyncInterval(6 * 3600);
               Events.delayedPush(5 * 60 * 1000, evCheckDistantBase);  // controle de la base dans 5 minutes
+              // lisen UDP 23423
+              Serial.println("Listen broadcast");
+              MyUDP.begin(localUdpPort);
             }
             D_println(WiFiConnected);
             writeHisto( WiFiConnected ? F("wifi Connected") : F("wifi lost"), WiFi.SSID() );
@@ -464,11 +476,14 @@ void loop() {
         //delay(500);
         String UUID = lecteurBadge.getUUIDTag();
         D_println(UUID);
+        
         badgeMode_t badgeMode = jobCheckBadge(UUID);
+        jobBroadcastCard(UUID);
         if (badgeMode == bmOk) {
           Serial.println(F("Badge Ok "));
           setMessage(F("Bonjour ..."));
           jobOpenDoor();
+          
           writeHisto(F("badge ok"), UUID);
 
         } else {

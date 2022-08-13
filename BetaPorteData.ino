@@ -489,3 +489,21 @@ void setMessage(const String & line1, const String & line2) {
   messageL1 = line1.substring(0, 16);
   setMessage(line2);
 }
+
+const  IPAddress broadcastIP(255, 255, 255, 255);
+
+bool jobBroadcastCard(const String & cardid) {
+  Serial.println("Send broadcast ");
+  String message = F("cardreader\t");
+  message += nodeName;
+  message += "\tcardid\t";
+  message += cardid;
+  message += "\tuser\t";
+  message += messageL1;
+  message += "\n";
+
+  if ( !MyUDP.beginPacket(broadcastIP, localUdpPort) ) return false;
+  MyUDP.write(message.c_str(), message.length());
+  Serial.print(message);
+  return MyUDP.endPacket();
+}

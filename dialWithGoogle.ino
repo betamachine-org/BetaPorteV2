@@ -110,8 +110,8 @@ bool dialWithGoogle(const String& aNode, const String& aAction, String& jsonPara
     http.end();   //Close connection (restore 22K of ram)
   }
 
-  D_println(Events.freeRam() + (0 * 06))
-  D_println(bigString.length());             //Print the response payload
+  //D_println(Events.freeRam() + (0 * 06))
+  //D_println(bigString.length());             //Print the response payload
   //D_println(bigString);
   // check json string without real json lib  not realy good but use less memory and faster
   int16_t answerPos = bigString.indexOf(F(",\"answer\":{"));
@@ -120,8 +120,8 @@ bool dialWithGoogle(const String& aNode, const String& aAction, String& jsonPara
   }
   // hard cut of "answer":{ xxxxxx } //
   jsonParam = bigString.substring(answerPos + 10, bigString.length() - 1);
-  D_println(jsonParam.length());
-  D_println(Events.freeRam() + 001);
+  //D_println(jsonParam.length());
+  //D_println(Events.freeRam() + 001);
   return (true);
 }
 
