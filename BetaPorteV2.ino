@@ -76,6 +76,7 @@ enum tUserEventCode {
   evCheckBadge,         //timer lecture etat badge
   evBadgeIn,            // Arrivee du badge
   evBadgeOut,           // Sortie du badge
+  evBadgeTrame,         // Trame UDP avec un badge
   evCheckDistantBase,   // simple check de la base normalement toute les 6 heures (5 minutes apres un acces)
   evReadDistantBadges,   // lecture de la base distant (mmise a jour liste des badges)
   evReadDistantPlages,   // lecture de la base distant (mmise a jour liste des plages horares)
@@ -165,6 +166,7 @@ bool     configOk = true; // global used by getConfig...
 
 String   messageL1;
 String   messageL2;
+String   messageUUID;
 bool     displayClock;
 
 bool     configErr = false;
@@ -212,6 +214,7 @@ void setup() {
   // Init LCD
   messageL1.reserve(16);
   messageL2.reserve(16);
+  messageUUID.reserve(16);
 
   lcd.begin(16, 2); // initialize the lcd
   lcd.setBacklight(100);
@@ -299,6 +302,11 @@ void loop() {
   Events.handle();
   switch (Events.code)
   {
+    case evNill:
+      handleUdpPacket();        // handle UDP connection other betaporte
+      break;
+
+
     case evInit:
       Serial.println("Init");
       jobGetBadgesVersion();
@@ -476,14 +484,14 @@ void loop() {
         //delay(500);
         String UUID = lecteurBadge.getUUIDTag();
         D_println(UUID);
-        
+
         badgeMode_t badgeMode = jobCheckBadge(UUID);
         jobBroadcastCard(UUID);
         if (badgeMode == bmOk) {
           Serial.println(F("Badge Ok "));
           setMessage(F("Bonjour ..."));
           jobOpenDoor();
-          
+
           writeHisto(F("badge ok"), UUID);
 
         } else {
@@ -500,6 +508,39 @@ void loop() {
 
       }
       break;
+
+    // Arrivee d'un badge via trame distante (UUID dans messageUUID)
+    case evBadgeTrame: {
+        beep( 1047, 200);
+        Events.delayedPush(3 * 60 * 1000, evCheckDistantBase); // on controle la base dans 3 minutes
+
+        lcd.clear();
+        D_println(messageUUID);
+
+        badgeMode_t badgeMode = jobCheckBadge(messageUUID);
+        if (badgeMode == bmOk) {
+          Serial.println(F("Badge Distant Ok "));
+          setMessage(F("Bonjour ..."));
+          jobOpenDoor();
+
+          writeHisto(F("badge distant ok"), messageUUID);
+
+        } else {
+          delay(200);
+          beep( 444, 400);
+          //enum badgeMode_t {bmOk, bmBadDate, bmBadTime, bmInvalide, bmBaseErreur, bmMAX };
+
+          String aString = F("Badge distant err : ");
+          aString += badgeMode;
+          Serial.println(aString);
+          setMessage(aString);
+          writeHisto(aString, messageUUID);
+        }
+
+      }
+      break;
+
+      
 
     // controle de la version de la base distante
     case evCheckDistantBase:  {

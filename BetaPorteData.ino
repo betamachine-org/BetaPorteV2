@@ -496,14 +496,65 @@ bool jobBroadcastCard(const String & cardid) {
   Serial.println("Send broadcast ");
   String message = F("cardreader\t");
   message += nodeName;
-  message += "\tcardid\t";
+  message += F("\tcardid\t");
   message += cardid;
-  message += "\tuser\t";
+  message += F("\tuser\t");
   message += messageL1;
-  message += "\n";
+  message += '\n';
 
   if ( !MyUDP.beginPacket(broadcastIP, localUdpPort) ) return false;
   MyUDP.write(message.c_str(), message.length());
   Serial.print(message);
   return MyUDP.endPacket();
+}
+
+
+void handleUdpPacket() {
+  int packetSize = MyUDP.parsePacket();
+  if (packetSize) {
+    Serial.print("Received packet UDP");
+    Serial.printf("Received packet of size %d from %s:%d\n    (to %s:%d, free heap = %d B)\n",
+                  packetSize,
+                  MyUDP.remoteIP().toString().c_str(), MyUDP.remotePort(),
+                  MyUDP.destinationIP().toString().c_str(), MyUDP.localPort(),
+                  ESP.getFreeHeap());
+    const int UDP_MAX_SIZE = 100;  // we handle short messages
+    char udpPacketBuffer[UDP_MAX_SIZE + 1]; //buffer to hold incoming packet,
+    int size = MyUDP.read(udpPacketBuffer, UDP_MAX_SIZE);
+
+    // read the packet into packetBufffer
+    if (packetSize > UDP_MAX_SIZE) {
+      Serial.printf("UDP too big ");
+      return;
+    }
+
+    //TODO: clean this   cleanup line feed
+    if (size > 0 && udpPacketBuffer[size - 1] == '\n') size--;
+
+    udpPacketBuffer[size] = 0;
+
+    String aStr = udpPacketBuffer;
+    D_println(aStr);
+
+    // Broadcast
+    if  ( MyUDP.destinationIP() == broadcastIP ) {
+      // it is a reception broadcast
+      String bStr = F("cardreader\t");
+      bStr += nodeName;
+      bStr += F("B\tcardid\t");
+      if (  aStr.startsWith(bStr) ) {
+        aStr = aStr.substring(bStr.length());
+        uint16_t pos = aStr.indexOf('\t');
+        //D_println(pos);
+        if (pos >= 4 && pos <= 16) {
+          messageUUID = aStr.substring(0, pos);
+          D_println(messageUUID);
+          Events.delayedPush(1000,evBadgeTrame);
+        }
+        return;
+      }
+    }
+
+
+  }
 }
