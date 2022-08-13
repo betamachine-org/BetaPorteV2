@@ -440,7 +440,7 @@ bool jobSetConfigInt(const String aKey, const int aValue) {
   // read current config
   JSONVar jsonConfig;  // empry config
   File aFile = MyLittleFS.open(CONFIG_FNAME, "r");
-  if (!aFile) {
+  if (aFile) {
     aFile.setTimeout(5);
     jsonConfig = JSON.parse(aFile.readStringUntil('\n'));
     aFile.close();

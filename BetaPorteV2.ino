@@ -30,6 +30,12 @@
   !! todo push timezone changed
     V2.0.1 (29/10/2021)
     Correction pour betaEvents V2.2
+    V2.0.3 (29/03/2022)
+    Correction pour betaEvents V2.3
+    Correction bug perte de config sur changement d'horaire
+    Meilleur de tection d'une absence de config
+    
+    
 
 *************************************************/
 
@@ -37,7 +43,7 @@
 #include "ESP8266.h"
 static_assert(sizeof(time_t) == 8, "This version works with time_t 64bit  move to ESP8266 kernel 3.0 or more");
 
-#define APP_NAME "BetaPorte V2.0.2"
+#define APP_NAME "BetaPorte V2.0.3"
 
 
 //
