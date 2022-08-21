@@ -502,8 +502,33 @@ bool jobBroadcastCard(const String & cardid) {
   message += messageL1;
   message += '\n';
 
-  if ( !MyUDP.beginPacket(broadcastIP, localUdpPort) ) return false;
+  if ( !MyUDP.beginPacket(broadcastIP, localUdpPort) ) {
+    Serial.println(F("open broadcast error"));
+    return false;
+  }
   MyUDP.write(message.c_str(), message.length());
+  MyUDP.endPacket();
+  delay(100);
+ if ( !MyUDP.beginPacket(broadcastIP, localUdpPort) ) {
+    Serial.println(F("open broadcast error"));
+    return false;
+  }
+  MyUDP.write(message.c_str(), message.length());
+  MyUDP.endPacket();
+  delay(100);
+ if ( !MyUDP.beginPacket(broadcastIP, localUdpPort) ) {
+    Serial.println(F("open broadcast error"));
+    return false;
+  }
+  MyUDP.write(message.c_str(), message.length());
+  MyUDP.endPacket();
+  delay(100);
+ if ( !MyUDP.beginPacket(broadcastIP, localUdpPort) ) {
+    Serial.println(F("open broadcast error"));
+    return false;
+  }
+  MyUDP.write(message.c_str(), message.length());
+
   Serial.print(message);
   return MyUDP.endPacket();
 }
@@ -524,7 +549,7 @@ void handleUdpPacket() {
 
     // read the packet into packetBufffer
     if (packetSize > UDP_MAX_SIZE) {
-      Serial.printf("UDP too big ");
+      Serial.print(F("UDP too big "));
       return;
     }
 
