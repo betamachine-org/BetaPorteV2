@@ -68,9 +68,10 @@ static_assert(sizeof(time_t) == 8, "This version works with time_t 64bit  move t
 
 enum tUserEventCode {
   // evenement utilisateurs
-  evBP0 = 100,      // low = low power allowed
-  evLed0,
-  evLowPower,
+  //evBP0 = 100,      // low = low power allowed
+  evLed0 = 100,
+  evDoorLock,           // controle verouillage porte
+  //evLowPower,
   evCloseDoor,          // timer desactiver le relai
   evBlinkClock,         // clignotement pendule
   evCheckBadge,         //timer lecture etat badge
@@ -97,8 +98,11 @@ enum tUserEventCode {
 //  Debug permet sur reception d'un "T" sur l'entrée Serial d'afficher les infos de charge du CPU
 
 //#define DEFAULT_PIN
-// les sortie pour la led et le poussoir sont definis dans esp8266.h avec BP0_PIN  et LED0_PIN
+// les sortie pour la led et le poussoir sont definis dans esp8266.h avec  LED0_PIN  (BP0 n'est pas utilisé ici)
 #include <BetaEvents.h>
+
+// bouton porte fermée
+evHandlerButton DoorStatus(evDoorLock, DOORLOCK_PIN);
 
 
 //  Info I2C
@@ -127,7 +131,7 @@ BadgeNfc_PN532_I2C lecteurBadge;   // instance du lecteur de badge
 #include <Arduino_JSON.h>
 
 bool sleepOk = true;
-int  multi = 0; // nombre de clic rapide
+//int  multi = 0; // nombre de clic rapide
 
 // gestion de l'ecran
 
@@ -152,8 +156,8 @@ String   nodeName = "NODE_NAME";    // nom de  la device (a configurer avec NODE
 // clef lue localement dans dialWithGoogle pour economiser de la ram globale
 bool     badgePresent = false;
 bool     WiFiConnected = false;
-bool     lowPowerAllowed = false;
-bool     lowPowerActive = false;
+//bool     lowPowerAllowed = false;
+//bool     lowPowerActive = false;
 
 time_t   currentTime;
 int8_t   timeZone = -2;          //les heures sont toutes en localtimes
@@ -446,6 +450,24 @@ void loop() {
 
       break;
 
+    // controle verouillage porte
+
+    case evDoorLock: {
+        switch (Events.ext) {
+          case evxBPDown:
+            
+            
+            Serial.println(F("Porte verouillée"));
+           
+            break;
+          case evxBPUp:
+            
+            Serial.println(F("Porte déverouillée  !!!"));
+            break;
+        }
+      }
+      break;
+
     // Detection changement d'etat badge
     case evCheckBadge: {
         int rateCheckBadge = 300; //lowPower  ? 2000 : 250;
@@ -466,7 +488,7 @@ void loop() {
         }
         badgePresent = etatBadge;
         D_println(badgePresent);
-        jobActionDetected();
+        //        jobActionDetected();
         Events.push((badgePresent ? evBadgeIn : evBadgeOut)); // Signalement a l'application
       }
       break;
@@ -540,7 +562,7 @@ void loop() {
       }
       break;
 
-      
+
 
     // controle de la version de la base distante
     case evCheckDistantBase:  {
@@ -622,40 +644,40 @@ void loop() {
       Events.reset();
       break;
 
-    case evLowPower:
-      if (Events.ext) {
-        //Serial.println(F("Low Power On"));
-        lowPowerActive = true;
-        lcd.setBacklight(0);
-        //WiFi.disconnect();
-        //WiFi.mode(WIFI_OFF);
-        //WiFi.forceSleepBegin();  // this do  a WiFiMode OFF  !!! 21ma
-      } else {
-        //Serial.println(F("Low Power Off"));
-        lowPowerActive = false;
-        lcd.setBacklight(100);
-        //WiFi.mode(WIFI_STA);
-        //WiFi.disconnect();
-        //WiFi.reconnect();
-        //jobSleepLater();
-      }
-      break;
+    //    case evLowPower:
+    //      if (Events.ext) {
+    //        //Serial.println(F("Low Power On"));
+    //        lowPowerActive = true;
+    //        lcd.setBacklight(0);
+    //        //WiFi.disconnect();
+    //        //WiFi.mode(WIFI_OFF);
+    //        //WiFi.forceSleepBegin();  // this do  a WiFiMode OFF  !!! 21ma
+    //      } else {
+    //        //Serial.println(F("Low Power Off"));
+    //        lowPowerActive = false;
+    //        lcd.setBacklight(100);
+    //        //WiFi.mode(WIFI_STA);
+    //        //WiFi.disconnect();
+    //        //WiFi.reconnect();
+    //        //jobSleepLater();
+    //      }
+    //      break;
 
-    // BP0 = detecteur de presence
-    case evBP0:
-      switch (Events.ext) {
-        case evxBPDown:
-          lowPowerAllowed = true;
-          break;
-        case evxBPUp:
-          lowPowerAllowed = false;
-          break;
-        default:
-          return;
-      }
-      jobActionDetected();
-      // D_println(lowPowerAllowed);
-      break;
+    //    // BP0 = detecteur de presence
+    //    case evBP0:
+    //      switch (Events.ext) {
+    //        case evxBPDown:
+    //          lowPowerAllowed = true;
+    //          break;
+    //        case evxBPUp:
+    //          lowPowerAllowed = false;
+    //          break;
+    //        default:
+    //          return;
+    //      }
+    //      jobActionDetected();
+    //      // D_println(lowPowerAllowed);
+    //      break;
 
     case evInChar: {
         if (Debug.trackTime < 2) {
@@ -826,16 +848,16 @@ void beep(const uint16_t frequence, const uint16_t duree) {
   tone(BEEP_PIN, frequence, duree);
 }
 
-void jobActionDetected() {
-  if (lowPowerActive) {
-    Serial.println(F("Wake from low power"));
-    Events.push(evLowPower, false);
-  }
-  if (lowPowerAllowed) {
-    Serial.println(F("low power in 5 minutes"));
-    Events.delayedPush(1 * 60 * 1000, evLowPower, true);
-  }
-}
+//void jobActionDetected() {
+//  if (lowPowerActive) {
+//    Serial.println(F("Wake from low power"));
+//    Events.push(evLowPower, false);
+//  }
+//  if (lowPowerAllowed) {
+//    Serial.println(F("low power in 5 minutes"));
+//    Events.delayedPush(1 * 60 * 1000, evLowPower, true);
+//  }
+//}
 
 String niceDisplayTime(const time_t time, bool full) {
 
