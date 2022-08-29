@@ -458,11 +458,12 @@ void loop() {
             
             
             Serial.println(F("Porte verouillée"));
-           
+             writeHisto(F("Porte"),F("verouillée"));
             break;
           case evxBPUp:
             
-            Serial.println(F("Porte déverouillée  !!!"));
+            Serial.println(F("Porte OUVERTE  !!!"));
+            writeHisto(F("Porte"),F("ouverte"));
             break;
         }
       }
@@ -775,6 +776,14 @@ void loop() {
         delay(1000);
         Events.reset();
       }
+
+     if (Keyboard.inputString.equals(F("RAZHISTO"))) {
+        Serial.println(F("RAZHISTO done"));
+        eraseHisto();
+        writeHisto(F("RAZHISTO"),F("manualy"));
+      }
+
+      
 
       if (Keyboard.inputString.equals(F("CHECK"))) {
         Events.push(evCheckDistantBase);

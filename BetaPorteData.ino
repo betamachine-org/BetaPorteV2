@@ -291,7 +291,7 @@ void writeHisto(const String aAction, const String aInfo) {
     aFile.println(jsonHisto);
     aFile.close();
   }
-  Events.delayedPush(0.2 * 60 * 1000, evSendHisto); // send histo in 5 minutes
+  Events.delayedPush(1 * 60 * 1000, evSendHisto); // send histo in 5 minutes (0.2 = 12 secondes pour test)
 }
 
 
@@ -354,13 +354,13 @@ void JobSendHisto() {
   // mise a jour de la time zone
   D_println(aTimeZone);
   if (aTimeZone != timeZone) {
-    writeHisto( F("Old TimeZone"), String(timeZone) );
+    //writeHisto( F("Old TimeZone"), String(timeZone) );
     timeZone = aTimeZone;
     jobSetConfigInt("timezone", timeZone);
     // force recalculation of time
     setSyncProvider(getWebTime);
     currentTime = now();
-    writeHisto( F("New TimeZone"), String(timeZone) );
+    //writeHisto( F("New TimeZone"), String(timeZone) );
   }
 
   if (!aFile.available()) {
@@ -372,7 +372,7 @@ void JobSendHisto() {
   // cut file histo.tmp avec une copie en .tmp
   // todo: utiliser seek pour eviter la double copie ?
   File bFile = MyLittleFS.open(F("/histo.tmp"), "w");
-  if (!aFile ) {
+  if (!bFile ) {
     aFile.close();
     return;
   }

@@ -46,7 +46,7 @@ bool dialWithGoogle(const String& aNode, const String& aAction, String& jsonPara
     //D_println(Events.freeRam() + 0002);
 
     HTTPClient http;  //Declare an object of class HTTPClient (Gsheet and webclock)
-    http.setTimeout(15000); // 10 Seconds   (could be long with google)
+    http.setTimeout(20000); // 10 Seconds   (could be long with google)
     //  HTTPClient http;  //Declare an object of class HTTPClient
     // !!! TODO get a set of valid root certificate for google !!!!
     wifiSecure.setInsecure(); //the magic line, use with caution  !!! certificate not checked
@@ -56,7 +56,7 @@ bool dialWithGoogle(const String& aNode, const String& aAction, String& jsonPara
     const size_t numberOfHeaders = 1;
     http.collectHeaders(headerKeys, numberOfHeaders);
     //D_println(Events.freeRam() + 01);
-    int httpCode = http.GET();//Send the request  (gram 22K of ram)
+    int httpCode = http.GET();//Send the request  (grab 22K of ram)
 
     /*** HTTP client errors
         #define HTTPCLIENT_DEFAULT_TCP_TIMEOUT (5000)
