@@ -491,95 +491,154 @@ void setMessage(const String & line1, const String & line2) {
 }
 
 const  IPAddress broadcastIP(255, 255, 255, 255);
+IPAddress  lastUdpId;
+IPAddress  unicastIP;
+uint8_t broadcastCnt = 0;  // compteur de trame 1 .. 255
 
-bool jobBroadcastCard(const String & cardid) {
-  Serial.println("Send broadcast ");
-  String message = F("cardreader\t");
+void jobBroadcastEvent(const String& jsonParam) {
+  String message = F("EVENT ");
+  if (++broadcastCnt == 0) broadcastCnt++;
+  message += broadcastCnt;
+  message += '\t';
   message += nodeName;
-  message += F("\tcardid\t");
-  message += cardid;
-  message += F("\tuser\t");
-  message += messageL1;
+  message += '\t';
+  message += jsonParam;
+
+  D_print(message);
   message += '\n';
+  for (int N = 1; N < 6; N++) {
+    if ( MyUDP.beginPacket(broadcastIP, localUdpPort) ) {
+      MyUDP.write(message.c_str(), message.length());
+      MyUDP.endPacket();
+      Serial.print(' ');
+      Serial.print(N);
 
-  if ( !MyUDP.beginPacket(broadcastIP, localUdpPort) ) {
-    Serial.println(F("open broadcast error"));
-    return false;
+    }
+    delay(50);
   }
-  MyUDP.write(message.c_str(), message.length());
-  MyUDP.endPacket();
-  delay(100);
- if ( !MyUDP.beginPacket(broadcastIP, localUdpPort) ) {
-    Serial.println(F("open broadcast error"));
-    return false;
-  }
-  MyUDP.write(message.c_str(), message.length());
-  MyUDP.endPacket();
-  delay(100);
- if ( !MyUDP.beginPacket(broadcastIP, localUdpPort) ) {
-    Serial.println(F("open broadcast error"));
-    return false;
-  }
-  MyUDP.write(message.c_str(), message.length());
-  MyUDP.endPacket();
-  delay(100);
- if ( !MyUDP.beginPacket(broadcastIP, localUdpPort) ) {
-    Serial.println(F("open broadcast error"));
-    return false;
-  }
-  MyUDP.write(message.c_str(), message.length());
-
-  Serial.print(message);
-  return MyUDP.endPacket();
+  Serial.println();
 }
+
+void jobUnicastReq(const String& jsonParam) {
+  String message = F("REQ ");
+  if (++broadcastCnt == 0) broadcastCnt++;
+  message += broadcastCnt;
+  message += '\t';
+  message += nodeName;
+  message += '\t';
+  message += jsonParam;
+
+  D_print(message);
+  message += '\n';
+  for (int N = 1; N < 6; N++) {
+    if ( MyUDP.beginPacket(unicastIP, localUdpPort) ) {
+      MyUDP.write(message.c_str(), message.length());
+      MyUDP.endPacket();
+      Serial.print(' ');
+      Serial.print(N);
+
+    }
+    delay(50);
+  }
+  Serial.println();
+
+}
+
+
+
 
 
 void handleUdpPacket() {
   int packetSize = MyUDP.parsePacket();
-  if (packetSize) {
-    Serial.print("Received packet UDP");
-    Serial.printf("Received packet of size %d from %s:%d\n    (to %s:%d, free heap = %d B)\n",
-                  packetSize,
-                  MyUDP.remoteIP().toString().c_str(), MyUDP.remotePort(),
-                  MyUDP.destinationIP().toString().c_str(), MyUDP.localPort(),
-                  ESP.getFreeHeap());
-    const int UDP_MAX_SIZE = 100;  // we handle short messages
-    char udpPacketBuffer[UDP_MAX_SIZE + 1]; //buffer to hold incoming packet,
-    int size = MyUDP.read(udpPacketBuffer, UDP_MAX_SIZE);
+  if (!packetSize) return;
 
-    // read the packet into packetBufffer
-    if (packetSize > UDP_MAX_SIZE) {
-      Serial.print(F("UDP too big "));
+  // Serial.print("Received packet UDP");
+  Serial.printf("Received packet of size %d from %s:%d\n    (to %s:%d, free heap = %d B)\n",
+                packetSize,
+                MyUDP.remoteIP().toString().c_str(), MyUDP.remotePort(),
+                MyUDP.destinationIP().toString().c_str(), MyUDP.localPort(),
+                ESP.getFreeHeap());
+  const int UDP_MAX_SIZE = 150;  // we handle short messages
+  char udpPacketBuffer[UDP_MAX_SIZE + 1]; //buffer to hold incoming packet,
+  int size = MyUDP.read(udpPacketBuffer, UDP_MAX_SIZE);
+
+  // read the packet into packetBufffer
+  if (packetSize > UDP_MAX_SIZE) {
+    Serial.print(F("UDP too big "));
+    return;
+  }
+
+  //cleanup line feed
+  if (size > 0 && udpPacketBuffer[size - 1] == '\n') size--;
+  udpPacketBuffer[size] = 0;
+
+  String aStr = udpPacketBuffer;
+  D_println(aStr);
+  //aStr => 'EVENT 9  BetaPorte_Test  {"action":"badge","userid":"Pierre"}'
+
+  // Broadcast
+  if  ( MyUDP.destinationIP() == broadcastIP ) {
+    // it is a reception broadcast
+    // filtrage des multi broadcast
+    String bStr = grabFromStringUntil(aStr, '\t'); // EVENT xxxx
+    if ( !grabFromStringUntil(bStr, ' ').equals(F("EVENT")) ) return;
+
+    // UdpId is a mix of remote IP and EVENT number
+    IPAddress  aUdpId = MyUDP.remoteIP();
+    aUdpId[0] = bStr.toInt();
+
+    if (aUdpId == lastUdpId) {
+      Serial.println(F("Doublon UDP"));
       return;
     }
-
-    //TODO: clean this   cleanup line feed
-    if (size > 0 && udpPacketBuffer[size - 1] == '\n') size--;
-
-    udpPacketBuffer[size] = 0;
-
-    String aStr = udpPacketBuffer;
-    D_println(aStr);
-
-    // Broadcast
-    if  ( MyUDP.destinationIP() == broadcastIP ) {
-      // it is a reception broadcast
-      String bStr = F("cardreader\t");
-      bStr += nodeName;
-      bStr += F("B\tcardid\t");
-      if (  aStr.startsWith(bStr) ) {
-        aStr = aStr.substring(bStr.length());
-        uint16_t pos = aStr.indexOf('\t');
-        //D_println(pos);
-        if (pos >= 4 && pos <= 16) {
-          messageUUID = aStr.substring(0, pos);
-          D_println(messageUUID);
-          Events.delayedPush(1000,evBadgeTrame);
-        }
-        return;
-      }
+    //Todo : filtrer les 5 dernier UdpID ?
+    lastUdpId = aUdpId;
+    unicastIP = MyUDP.remoteIP();
+    // Valide Event
+    bStr = grabFromStringUntil(aStr, '\t'); // nom du node emetteur
+    bStr = ',' + bStr + ',';
+    D_println(bStr);
+    if ( jobGetConfigStr(F("bindwith")).indexOf(bStr) < 0) {
+      Serial.println(F("not a valide bind"));
+      return;
     }
-
-
+    JSONVar jsonData = JSON.parse(aStr);
+    bStr = (const char*)jsonData["action"];
+    D_println(bStr);
+    if ( !bStr.equals(F("badge")) ) {
+      Serial.print(F("not a valide action "));
+      return;
+    }
+    bStr = (const char*)jsonData["userid"];
+    D_println(bStr);
+    int N = bStr.length();
+    if ( N < 4 || N > 16) {
+      Serial.println(F("not a valide userid"));
+      return;
+    }
+    messageUUID = bStr;
+    Events.delayedPush(500, evBadgeUserid);
+    return;
   }
+
+  // Unicast
+  //  if  ( MyUDP.destinationIP() == broadcastIP ) {
+  // it is a reception broadcast
+  // filtrage des multi broadcast
+  String bStr = grabFromStringUntil(aStr, '\t'); // REQ xxxx
+  if ( !grabFromStringUntil(bStr, ' ').equals(F("REQ")) ) return;
+
+  // UdpId is a mix of remote IP and EVENT number
+  IPAddress  aUdpId = MyUDP.remoteIP();
+  aUdpId[0] = bStr.toInt();
+
+  if (aUdpId == lastUdpId) {
+    Serial.println(F("Doublon UDP"));
+    return;
+  }
+  //Todo : filtrer les 5 dernier UdpID ?
+  lastUdpId = aUdpId;
+
+
+  //  }
 }

@@ -36,7 +36,7 @@
     Meilleur de detection d'une absence de config
     V2.1.0 (13/08/2022)
     Gestion des betaporte escalve via UDP
-    Gestion de la confirmation de la fermeture de la porte via le port
+    Gestion de la confirmation de la fermeture de la porte via le port D5
 
 
 *************************************************/
@@ -71,12 +71,13 @@ enum tUserEventCode {
   //evBP0 = 100,      // low = low power allowed
   evLed0 = 100,
   evDoorLock,           // controle verouillage porte
-  //evLowPower,
+  evTimerBadgeUnlock,   //evDoorUnlocked,       // controle du deverouillage long de la porte
   evCloseDoor,          // timer desactiver le relai
   evBlinkClock,         // clignotement pendule
   evCheckBadge,         //timer lecture etat badge
   evBadgeIn,            // Arrivee du badge
   evBadgeOut,           // Sortie du badge
+  evBadgeUserid,        // Trame UDP avec un user ID (other reader BINDWITH)
   evBadgeTrame,         // Trame UDP avec un badge
   evCheckDistantBase,   // simple check de la base normalement toute les 6 heures (5 minutes apres un acces)
   evReadDistantBadges,   // lecture de la base distant (mmise a jour liste des badges)
@@ -156,15 +157,14 @@ String   nodeName = "NODE_NAME";    // nom de  la device (a configurer avec NODE
 // clef lue localement dans dialWithGoogle pour economiser de la ram globale
 bool     badgePresent = false;
 bool     WiFiConnected = false;
-//bool     lowPowerAllowed = false;
-//bool     lowPowerActive = false;
 
 time_t   currentTime;
+time_t timeLastOpen = 0;            // time stamp de l'ouverture en secondes
+bool      badgeUnlockDoor = false;    // vrai si la porte a ete badgé il y a moins de 30 secondes
 int8_t   timeZone = -2;          //les heures sont toutes en localtimes
 uint16_t badgesBaseVersion = 0;  //version de la base badges en flash
 uint16_t plagesBaseVersion = 0;  //version de la base plages en flash
 uint16_t distantBaseVersion = 0; //version derniere base distante connue
-//uint16_t distantBaseIndex = 0;   //position de la lecture base en cours (uniquement pour les badges)
 
 bool     configOk = true; // global used by getConfig...
 
@@ -454,18 +454,48 @@ void loop() {
 
     case evDoorLock: {
         switch (Events.ext) {
-          case evxBPDown:
-            
-            
-            Serial.println(F("Porte verouillée"));
-             writeHisto(F("Porte"),F("verouillée"));
+          case evxBPDown: { // verouillage de la porte actif
+
+              Events.removeDelayEvent(evTimerBadgeUnlock);   //
+              String aTxt;
+              if (badgeUnlockDoor) {
+                // la porte a ete ouverte par un badge
+                badgeUnlockDoor = false;
+                aTxt = F("ouverte par badge ");
+              } else {
+                // fermeture apres un deverouillage manuelle
+                aTxt = F("refermée après  ");
+
+              }
+              if (timeLastOpen) {
+                aTxt += niceDisplayShortTime(currentTime - timeLastOpen);
+                timeLastOpen = 0;
+              } else {
+                aTxt += F(" ???");
+              }
+
+              Serial.print(F("Porte "));
+              Serial.println(aTxt);
+              writeHisto(F("Porte"), aTxt);
+            }
             break;
-          case evxBPUp:
-            
+
+          case evxBPUp:  // ouverture ou deverouillage porte
+
+            //Events.delayedPush(60 * 1000, evDoorUnlocked); // arme la detection de poste superieure a 1 minute
             Serial.println(F("Porte OUVERTE  !!!"));
-            writeHisto(F("Porte"),F("ouverte"));
+            timeLastOpen = currentTime;
+            if (!badgeUnlockDoor) {
+              writeHisto(F("Porte"), F("déverouillée manuellement"));
+            }
             break;
         }
+      }
+      break;
+
+    case evTimerBadgeUnlock: {
+        badgeUnlockDoor = false;
+        writeHisto(F("Porte"), F("maintenue ouverte"));
       }
       break;
 
@@ -509,7 +539,13 @@ void loop() {
         D_println(UUID);
 
         badgeMode_t badgeMode = jobCheckBadge(UUID);
-        jobBroadcastCard(UUID);
+
+        String jsonStr;
+        jsonStr = F("{\"action\":\"badge\",\"userid\":\"");
+        jsonStr += messageL1;
+        jsonStr += F("\"}");
+
+        jobBroadcastEvent(jsonStr);
         if (badgeMode == bmOk) {
           Serial.println(F("Badge Ok "));
           setMessage(F("Bonjour ..."));
@@ -529,6 +565,13 @@ void loop() {
           writeHisto(aString, UUID);
         }
 
+      }
+      break;
+    // Arrivee d'un badge via trame distante (userid dans messageUUID)
+    case evBadgeUserid: {
+        Serial.print(F("Distant userid "));
+        D_println(messageUUID);
+        jobUnicastReq(F("{\"action\":\"giveUUID\"}"));
       }
       break;
 
@@ -645,40 +688,7 @@ void loop() {
       Events.reset();
       break;
 
-    //    case evLowPower:
-    //      if (Events.ext) {
-    //        //Serial.println(F("Low Power On"));
-    //        lowPowerActive = true;
-    //        lcd.setBacklight(0);
-    //        //WiFi.disconnect();
-    //        //WiFi.mode(WIFI_OFF);
-    //        //WiFi.forceSleepBegin();  // this do  a WiFiMode OFF  !!! 21ma
-    //      } else {
-    //        //Serial.println(F("Low Power Off"));
-    //        lowPowerActive = false;
-    //        lcd.setBacklight(100);
-    //        //WiFi.mode(WIFI_STA);
-    //        //WiFi.disconnect();
-    //        //WiFi.reconnect();
-    //        //jobSleepLater();
-    //      }
-    //      break;
 
-    //    // BP0 = detecteur de presence
-    //    case evBP0:
-    //      switch (Events.ext) {
-    //        case evxBPDown:
-    //          lowPowerAllowed = true;
-    //          break;
-    //        case evxBPUp:
-    //          lowPowerAllowed = false;
-    //          break;
-    //        default:
-    //          return;
-    //      }
-    //      jobActionDetected();
-    //      // D_println(lowPowerAllowed);
-    //      break;
 
     case evInChar: {
         if (Debug.trackTime < 2) {
@@ -759,6 +769,19 @@ void loop() {
 
       }
 
+      if (Keyboard.inputString.startsWith(F("BINDWITH="))) {
+        Serial.println(F("BIND other node : 'BINDWITH=node1[,node2...]"));
+        String aStr = Keyboard.inputString;
+        grabFromStringUntil(aStr, '=');
+        aStr.trim();
+        aStr = ',' + aStr + ',';
+        D_println(aStr);
+        jobSetConfigStr(F("bindwith"), aStr);
+      }
+
+
+
+
       if (Keyboard.inputString.equals(F("RESET"))) {
         Serial.println(F("RESET"));
         Events.push(doReset);
@@ -777,13 +800,13 @@ void loop() {
         Events.reset();
       }
 
-     if (Keyboard.inputString.equals(F("RAZHISTO"))) {
+      if (Keyboard.inputString.equals(F("RAZHISTO"))) {
         Serial.println(F("RAZHISTO done"));
         eraseHisto();
-        writeHisto(F("RAZHISTO"),F("manualy"));
+        writeHisto(F("RAZHISTO"), F("manualy"));
       }
 
-      
+
 
       if (Keyboard.inputString.equals(F("CHECK"))) {
         Events.push(evCheckDistantBase);
@@ -803,10 +826,13 @@ void loop() {
   }
 }
 
+// deverouille la porte et indique l'ouverture par badge avec badgeUnlockDoor
 void jobOpenDoor() {
   digitalWrite(GACHE_PIN, !GACHE_ACTIVE);   //ouvre la porte
   Led0.setFrequence(5);
   Events.delayedPush(GACHE_TEMPO, evCloseDoor);
+  badgeUnlockDoor = true;  // signale durant 1 minute que la porte etatit ouverte par un badge
+  Events.delayedPush(30 * 1000, evTimerBadgeUnlock);  // arme un evenement pour tracer les ouverture de plus 30 secondes
 }
 
 void jobCloseDoor() {
@@ -900,6 +926,36 @@ String niceDisplayTime(const time_t time, bool full) {
   txt += Digit2_str(second(time));
   return txt;
 }
+
+String niceDisplayShortTime(const time_t time) {
+
+  String txt;
+  uint16_t N = time / (24 * 3600);
+  if (N > 0) {
+
+    txt += N;
+    txt += F("j ");
+  }
+
+  N = hour(time);
+  if (N > 0 || txt.length() > 0) {
+    txt += N;
+    txt += F("h ");
+  }
+
+  N = minute(time);
+  if (N > 0 || txt.length() > 0) {
+    txt += N;
+    txt += F("m ");
+  }
+
+
+  txt += second(time);
+  txt += F("s ");
+
+  return txt;
+}
+
 
 // helper to save and restore RTC_DATA
 // this is ugly but we need this to get correct sizeof()
