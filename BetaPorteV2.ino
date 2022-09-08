@@ -161,6 +161,7 @@ bool     WiFiConnected = false;
 time_t   currentTime;
 time_t timeLastOpen = 0;            // time stamp de l'ouverture en secondes
 bool      badgeUnlockDoor = false;    // vrai si la porte a ete badgé il y a moins de 30 secondes
+bool      gacheUnlocked = false;      // copie de l'etat de la gache
 int8_t   timeZone = -2;          //les heures sont toutes en localtimes
 uint16_t badgesBaseVersion = 0;  //version de la base badges en flash
 uint16_t plagesBaseVersion = 0;  //version de la base plages en flash
@@ -550,7 +551,7 @@ void loop() {
           Serial.println(F("Badge Ok "));
           setMessage(F("Bonjour ..."));
           jobOpenDoor();
-
+          messageUUID = UUID;
           writeHisto(F("badge ok"), UUID);
 
         } else {
@@ -829,14 +830,16 @@ void loop() {
 // deverouille la porte et indique l'ouverture par badge avec badgeUnlockDoor
 void jobOpenDoor() {
   digitalWrite(GACHE_PIN, !GACHE_ACTIVE);   //ouvre la porte
+  gacheUnlocked = true;
   Led0.setFrequence(5);
   Events.delayedPush(GACHE_TEMPO, evCloseDoor);
-  badgeUnlockDoor = true;  // signale durant 1 minute que la porte etatit ouverte par un badge
+  badgeUnlockDoor = true;  // signale durant 1 minute que la porte etait ouverte par un badge
   Events.delayedPush(30 * 1000, evTimerBadgeUnlock);  // arme un evenement pour tracer les ouverture de plus 30 secondes
 }
 
 void jobCloseDoor() {
   digitalWrite(GACHE_PIN, GACHE_ACTIVE);   //Porte fermée
+  gacheUnlocked = false;
   Led0.setFrequence(WiFiConnected ? 1 : 2);
 }
 

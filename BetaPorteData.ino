@@ -622,9 +622,8 @@ void handleUdpPacket() {
   }
 
   // Unicast
-  //  if  ( MyUDP.destinationIP() == broadcastIP ) {
-  // it is a reception broadcast
-  // filtrage des multi broadcast
+
+  // filtrage des multi unicast
   String bStr = grabFromStringUntil(aStr, '\t'); // REQ xxxx
   if ( !grabFromStringUntil(bStr, ' ').equals(F("REQ")) ) return;
 
@@ -638,7 +637,32 @@ void handleUdpPacket() {
   }
   //Todo : filtrer les 5 dernier UdpID ?
   lastUdpId = aUdpId;
+  unicastIP = MyUDP.remoteIP();
 
+
+
+
+  // Valide Event
+  bStr = grabFromStringUntil(aStr, '\t'); // nom du node emetteur
+  D_println(bStr);
+  if ( !gacheUnlocked) {
+    Serial.println(F("REQ hors delay"));
+    writeHisto(F("Anomalie"), F("REQ hors delay"));
+    return;
+  }
+  JSONVar jsonData = JSON.parse(aStr);
+  bStr = (const char*)jsonData["action"];
+  D_println(bStr);
+  if ( !bStr.equals(F("giveUUID")) ) {
+    Serial.print(F("not a valide action "));
+    return;
+  }
+  String jsonStr = F("{\"UUID\":\"");
+  jsonStr += messageUUID;
+  jsonStr += F("\"}");
+  jobUnicastReq(jsonStr);
+  writeHisto(F("answer"), bStr);
+  return;
 
   //  }
 }
