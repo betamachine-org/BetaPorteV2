@@ -464,21 +464,6 @@ void eraseConfig() {
   MyLittleFS.remove(CONFIG_FNAME);
 }
 
-
-String grabFromStringUntil(String & aString, const char aKey) {
-  String result;
-  int pos = aString.indexOf(aKey);
-  if ( pos == -1 ) {
-    result = aString;
-    aString = "";
-    return (result);  // not match
-  }
-  result = aString.substring(0, pos);
-  //aString = aString.substring(pos + aKey.length());
-  aString = aString.substring(pos + 1);
-  return (result);
-}
-
 void setMessage(const String & line2) {
   messageL2 = line2.substring(0, 16);
   lcdRedraw = true;
@@ -490,6 +475,8 @@ void setMessage(const String & line1, const String & line2) {
   setMessage(line2);
 }
 
+
+/*************************************
 const  IPAddress broadcastIP(255, 255, 255, 255);
 IPAddress  lastUdpId;
 IPAddress  unicastIP;
@@ -518,7 +505,9 @@ void jobBroadcastEvent(const String& jsonParam) {
   }
   Serial.println();
 }
+********************************/
 
+/**********************
 void jobUnicastReq(const String& jsonParam) {
   String message = F("REQ ");
   if (++broadcastCnt == 0) broadcastCnt++;
@@ -543,11 +532,11 @@ void jobUnicastReq(const String& jsonParam) {
   Serial.println();
 
 }
+*********************/
 
 
 
-
-
+/***********************************************
 void handleUdpPacket() {
   int packetSize = MyUDP.parsePacket();
   if (!packetSize) return;
@@ -666,3 +655,4 @@ void handleUdpPacket() {
 
   //  }
 }
+************************************/

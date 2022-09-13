@@ -77,8 +77,9 @@ enum tUserEventCode {
   evCheckBadge,         //timer lecture etat badge
   evBadgeIn,            // Arrivee du badge
   evBadgeOut,           // Sortie du badge
-  evBadgeUserid,        // Trame UDP avec un user ID (other reader BINDWITH)
-  evBadgeTrame,         // Trame UDP avec un badge
+  evUdp,         // Trame UDP avec un evenement
+  //evBadgeUserid,        // Trame UDP avec un user ID (other reader BINDWITH)
+  evBadgeDistant,         // Trame UDP avec un badge
   evCheckDistantBase,   // simple check de la base normalement toute les 6 heures (5 minutes apres un acces)
   evReadDistantBadges,   // lecture de la base distant (mmise a jour liste des badges)
   evReadDistantPlages,   // lecture de la base distant (mmise a jour liste des plages horares)
@@ -178,11 +179,15 @@ bool     configErr = false;
 enum badgeMode_t {bmOk, bmBadDate, bmBadTime, bmInvalide, bmBaseErreur, bmMAX };
 //badgeMode_t badgeMode = bmInvalide;
 
-#include <WiFiUdp.h>
-// port d'ecoute UDP
+//#include <WiFiUdp.h>
+//// port d'ecoute UDP
+//const unsigned int localUdpPort = 23423;      // local port to listen on
+////Objet UDP pour la liaison avec la console
+//WiFiUDP MyUDP;
+// init UDP
+#include  "evHandlerUdp.h"
 const unsigned int localUdpPort = 23423;      // local port to listen on
-//Objet UDP pour la liaison avec la console
-WiFiUDP MyUDP;
+evHandlerUdp myUdp(evUdp, localUdpPort, nodeName);
 
 
 void setup() {
@@ -307,9 +312,9 @@ void loop() {
   Events.handle();
   switch (Events.code)
   {
-    case evNill:
-      handleUdpPacket();        // handle UDP connection other betaporte
-      break;
+    //    case evNill:
+    //      handleUdpPacket();        // handle UDP connection other betaporte
+    //      break;
 
 
     case evInit:
@@ -413,9 +418,9 @@ void loop() {
               setSyncProvider(getWebTime);
               setSyncInterval(6 * 3600);
               Events.delayedPush(5 * 60 * 1000, evCheckDistantBase);  // controle de la base dans 5 minutes
-              // lisen UDP 23423
-              Serial.println("Listen broadcast");
-              MyUDP.begin(localUdpPort);
+              //              // lisen UDP 23423
+              //              Serial.println("Listen broadcast");
+              //              MyUDP.begin(localUdpPort);
             }
             D_println(WiFiConnected);
             writeHisto( WiFiConnected ? F("wifi Connected") : F("wifi lost"), WiFi.SSID() );
@@ -525,6 +530,15 @@ void loop() {
       }
       break;
 
+    case evUdp: {
+        if (Events.ext == evxUdpRxMessage) {
+          D_print(myUdp.rxHeader);
+          D_print(myUdp.rxNode);
+          D_println(myUdp.rxJson);
+        }
+      }
+      break;
+
     // Arrivee d'un badge
     case evBadgeIn: {
         beep( 1047, 200);
@@ -546,7 +560,7 @@ void loop() {
         jsonStr += messageL1;
         jsonStr += F("\"}");
 
-        jobBroadcastEvent(jsonStr);
+        myUdp.broadcast(jsonStr);
         if (badgeMode == bmOk) {
           Serial.println(F("Badge Ok "));
           setMessage(F("Bonjour ..."));
@@ -569,15 +583,15 @@ void loop() {
       }
       break;
     // Arrivee d'un badge via trame distante (userid dans messageUUID)
-    case evBadgeUserid: {
-        Serial.print(F("Distant userid "));
-        D_println(messageUUID);
-        jobUnicastReq(F("{\"action\":\"giveUUID\"}"));
-      }
-      break;
+    //    case evBadgeUserid: {
+    //        Serial.print(F("Distant userid "));
+    //        D_println(messageUUID);
+    //        jobUnicastReq(F("{\"action\":\"giveUUID\"}"));
+    //      }
+    //      break;
 
     // Arrivee d'un badge via trame distante (UUID dans messageUUID)
-    case evBadgeTrame: {
+    case evBadgeDistant: {
         beep( 1047, 200);
         Events.delayedPush(3 * 60 * 1000, evCheckDistantBase); // on controle la base dans 3 minutes
 
