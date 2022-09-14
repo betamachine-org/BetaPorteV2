@@ -164,6 +164,7 @@ time_t timeLastOpen = 0;            // time stamp de l'ouverture en secondes
 bool      badgeUnlockDoor = false;    // vrai si la porte a ete badgé il y a moins de 30 secondes
 bool      gacheUnlocked = false;      // copie de l'etat de la gache
 int8_t   timeZone = -2;          //les heures sont toutes en localtimes
+int8_t   delayUnlock = 30;
 uint16_t badgesBaseVersion = 0;  //version de la base badges en flash
 uint16_t plagesBaseVersion = 0;  //version de la base plages en flash
 uint16_t distantBaseVersion = 0; //version derniere base distante connue
@@ -280,7 +281,12 @@ void setup() {
   }
   D_println(timeZone);
 
-
+  delayUnlock = jobGetConfigInt(F("delayunlock"));
+  if (!configOk) {
+    delayUnlock = 30;
+    jobSetConfigInt(F("delayunlock"), delayUnlock);
+  }
+  D_println(delayUnlock);
 
   //GKey = jobGetConfigStr(F("gkey"));
   if (jobGetConfigStr(F("gkey")) == "") {
@@ -531,11 +537,79 @@ void loop() {
       break;
 
     case evUdp: {
-        if (Events.ext == evxUdpRxMessage) {
-          D_print(myUdp.rxHeader);
-          D_print(myUdp.rxNode);
-          D_println(myUdp.rxJson);
+        if (Events.ext != evxUdpRxMessage) return;
+
+        // Analyse des trames distantes
+        D_print(myUdp.bcast);
+        D_print(myUdp.rxHeader);
+        D_print(myUdp.rxNode);
+
+        bool binded = ( jobGetConfigStr(F("bindwith")).indexOf(myUdp.rxNode) >= 0);
+        D_println(binded);
+        D_println(myUdp.rxJson);
+
+        // accept giveuuid when door unloked unicast only
+        //        UDPmyUdp.bcast => '0', myUdp.rxHeader => 'EVENT', myUdp.rxNode => 'Betaporte_2',
+        //        myUdp.rxJson => '{"action":"giveUUID"}'
+        JSONVar jsonData = JSON.parse(myUdp.rxJson);
+        String action = (const char*)jsonData["action"];
+        static time_t lastGiveUUID = 0;
+        D_println(action);
+        if (!myUdp.bcast) {
+          //D_println(millis()-lastGiveUUID);
+          if ( action.equals(F("sendUUID")) && binded && (millis() - lastGiveUUID < 1500)) {
+            Serial.println("Got a sendUUID");
+            messageUUID = (const char*)jsonData["UUID"];
+            Events.delayedPush(50, evBadgeDistant);
+            return;
+          }
+          if ( !action.equals(F("giveUUID")) || !gacheUnlocked) {
+            String aStr = F("invalide ");
+            aStr += action;
+            aStr += F(" de ");
+            aStr += myUdp.rxNode;
+            writeHisto( F("Action"), aStr );
+            D_println(aStr);
+            return;
+          }
+          String aStr = F("{\"action\":\"sendUUID\",\"UUID\":\"");
+          aStr += messageUUID;
+          aStr += F("\"}");
+
+          myUdp.unicast(myUdp.rxIPSender, aStr);
+
+          return;
         }
+
+
+        // recherche lecture badge distant
+        // UDPmyUdp.rxHeader => 'EVENT', myUdp.rxNode => 'Betaporte_2B', myUdp.rxJson => '{"action":"badge","userid":"Test_5"}'
+
+        if (!binded) {
+          Serial.println(F("not a valide bind"));
+          return;
+        }
+        if ( !action.equals(F("badge")) ) {
+          Serial.print(F("not a valide action "));
+          return;
+        }
+        String bStr = (const char*)jsonData["userid"];
+        D_println(bStr);
+        int N = bStr.length();
+        if ( N < 4 || N > 16) {
+          Serial.println(F("not a valide userid"));
+          return;
+        }
+        //        messageUUID = bStr;
+        //        Events.delayedPush(500, evBadgeUserid);
+        Serial.print(F("Distant userid "));
+        D_println(bStr);
+        lastGiveUUID = millis();
+        myUdp.unicast(myUdp.rxIPSender, F("{\"action\":\"giveUUID\"}"));
+
+
+        return;
+
       }
       break;
 
@@ -556,13 +630,9 @@ void loop() {
         badgeMode_t badgeMode = jobCheckBadge(UUID);
 
         String jsonStr;
-        jsonStr = F("{\"action\":\"badge\",\"userid\":\"");
-        jsonStr += messageL1;
-        jsonStr += F("\"}");
-
-        myUdp.broadcast(jsonStr);
         if (badgeMode == bmOk) {
           Serial.println(F("Badge Ok "));
+          jsonStr = F("{\"action\":\"badge\",\"userid\":\"");
           setMessage(F("Bonjour ..."));
           jobOpenDoor();
           messageUUID = UUID;
@@ -572,13 +642,17 @@ void loop() {
           delay(200);
           beep( 444, 400);
           //enum badgeMode_t {bmOk, bmBadDate, bmBadTime, bmInvalide, bmBaseErreur, bmMAX };
-
+          jsonStr = F("{\"action\":\"badgeErr\",\"userid\":\"");
           String aString = F("Badge err : ");
+
           aString += badgeMode;
           Serial.println(aString);
           setMessage(aString);
           writeHisto(aString, UUID);
         }
+        jsonStr += messageL1;
+        jsonStr += F("\"}");
+        myUdp.broadcast(jsonStr);
 
       }
       break;
@@ -739,8 +813,9 @@ void loop() {
         Serial.println(F("SETUP NODENAME : 'NODE=nodename'  ( this will reset)"));
         String aStr = Keyboard.inputString;
         grabFromStringUntil(aStr, '=');
-        aStr.replace(" ", "_");
         aStr.trim();
+        aStr.replace(" ", "_");
+
 
         if (aStr != "") {
           nodeName = aStr;
@@ -789,21 +864,29 @@ void loop() {
         String aStr = Keyboard.inputString;
         grabFromStringUntil(aStr, '=');
         aStr.trim();
+        aStr.replace(" ", "_");
         aStr = ',' + aStr + ',';
         D_println(aStr);
         jobSetConfigStr(F("bindwith"), aStr);
       }
 
 
+      if (Keyboard.inputString.startsWith(F("DELAYUNLOCK="))) {
+        Serial.println(F("DELAYUNLOCK : 'DELAYUNLOCK=xxx seconds  0 = no delay"));
+        String aStr = Keyboard.inputString;
+        grabFromStringUntil(aStr, '=');
+        delayUnlock = aStr.toInt();
+
+        D_println(delayUnlock);
+        jobSetConfigInt(F("delayunlock"), delayUnlock);
+      }
 
 
       if (Keyboard.inputString.equals(F("RESET"))) {
         Serial.println(F("RESET"));
         Events.push(doReset);
       }
-      if (Keyboard.inputString.equals(F("FREE"))) {
-        D_println(Events.freeRam());
-      }
+
       if (Keyboard.inputString.equals("S")) {
         sleepOk = !sleepOk;
         D_println(sleepOk);
@@ -848,7 +931,7 @@ void jobOpenDoor() {
   Led0.setFrequence(5);
   Events.delayedPush(GACHE_TEMPO, evCloseDoor);
   badgeUnlockDoor = true;  // signale durant 1 minute que la porte etait ouverte par un badge
-  Events.delayedPush(30 * 1000, evTimerBadgeUnlock);  // arme un evenement pour tracer les ouverture de plus 30 secondes
+  if (delayUnlock>0) Events.delayedPush(delayUnlock * 1000, evTimerBadgeUnlock);  // arme un evenement pour tracer les ouverture de plus 30 secondes
 }
 
 void jobCloseDoor() {
