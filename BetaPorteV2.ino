@@ -489,6 +489,10 @@ void loop() {
               Serial.print(F("Porte "));
               Serial.println(aTxt);
               writeHisto(F("Porte"), aTxt);
+              if (delayUnlock) {
+                String jsonStr = F("{\"action\":\"porte\",\"close\":true}");
+                myUdp.broadcast(jsonStr);
+              }
             }
             break;
 
@@ -496,6 +500,11 @@ void loop() {
 
             //Events.delayedPush(60 * 1000, evDoorUnlocked); // arme la detection de poste superieure a 1 minute
             Serial.println(F("Porte OUVERTE  !!!"));
+            if (delayUnlock) {
+              String jsonStr = F("{\"action\":\"porte\",\"close\":false}");
+              myUdp.broadcast(jsonStr);
+            }
+
             timeLastOpen = currentTime;
             if (!badgeUnlockDoor) {
               writeHisto(F("Porte"), F("déverouillée manuellement"));
@@ -931,7 +940,7 @@ void jobOpenDoor() {
   Led0.setFrequence(5);
   Events.delayedPush(GACHE_TEMPO, evCloseDoor);
   badgeUnlockDoor = true;  // signale durant 1 minute que la porte etait ouverte par un badge
-  if (delayUnlock>0) Events.delayedPush(delayUnlock * 1000, evTimerBadgeUnlock);  // arme un evenement pour tracer les ouverture de plus 30 secondes
+  if (delayUnlock > 0) Events.delayedPush(delayUnlock * 1000, evTimerBadgeUnlock); // arme un evenement pour tracer les ouverture de plus 30 secondes
 }
 
 void jobCloseDoor() {
