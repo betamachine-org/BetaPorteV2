@@ -37,6 +37,11 @@
     V2.1.0 (13/08/2022)
     Gestion des betaporte escalve via UDP
     Gestion de la confirmation de la fermeture de la porte via le port D5
+    V2.1.1 (30/09/2022)
+    Compatible BetaEvent V2.4
+
+Le croquis utilise 470249 octets (45%) de l'espace de stockage de programmes. Le maximum est de 1044464 octets.
+Les variables globales utilisent 30676 octets (37%) de mémoire dynamique, ce qui laisse 51244 octets pour les variables locales. Le maximum est de 81920 octets.
 
 
 *************************************************/
@@ -45,7 +50,7 @@
 #include "ESP8266.h"
 static_assert(sizeof(time_t) == 8, "This version works with time_t 64bit  move to ESP8266 kernel 3.0 or more");
 
-#define APP_NAME "BetaPorte V2.0.3"
+#define APP_NAME "BetaPorte V2.1.1"
 
 
 //
@@ -193,7 +198,7 @@ evHandlerUdp myUdp(evUdp, localUdpPort, nodeName);
 
 void setup() {
   enableWiFiAtBootTime();   // obligatoire pour lekernel ESP > 3.0
-  Serial.begin(115200);
+  //Serial.begin(115200);
 
   //porte fermée = gache active
   pinMode(GACHE_PIN, OUTPUT);
@@ -466,7 +471,7 @@ void loop() {
 
     case evDoorLock: {
         switch (Events.ext) {
-          case evxBPDown: { // verouillage de la porte actif
+          case evxOn: { // verouillage de la porte actif
 
               Events.removeDelayEvent(evTimerBadgeUnlock);   //
               String aTxt;
@@ -496,7 +501,7 @@ void loop() {
             }
             break;
 
-          case evxBPUp:  // ouverture ou deverouillage porte
+          case evxOff:  // ouverture ou deverouillage porte
 
             //Events.delayedPush(60 * 1000, evDoorUnlocked); // arme la detection de poste superieure a 1 minute
             Serial.println(F("Porte OUVERTE  !!!"));
