@@ -23,13 +23,18 @@
     You should have received a copy of the GNU Lesser General Public License
     along with betaEvents.  If not, see <https://www.gnu.org/licenses/lglp.txt>.
 
-
+//String in FLASH (use FPSTR(XX) to get them)
+static const char F_captiveWebFolder[] PROGMEM = "captiveWebFolder";
+static const char F_webName[] PROGMEM = "webName";
+Le croquis utilise 470249 octets (45%) de l'espace de stockage de programmes. Le maximum est de 1044464 octets.
+Les variables globales utilisent 30676 octets (37%) de mémoire dynamique, ce qui laisse 51244 octets pour les variables locales. Le maximum est de 81920 octets.
 
 *************************************************/
 #define HISTO_FNAME  F("/histo.json")
 #define CONFIG_FNAME F("/config.json")
 #define BADGE_FNAME F("/badges.json")
 #define PLAGE_FNAME F("/plages.json")
+
 
 //Version de la base 0 en cas d'erreur
 uint16_t jobGetDistantBaseVersion() {
@@ -38,7 +43,7 @@ uint16_t jobGetDistantBaseVersion() {
 
   // lecture de la version de la base distante
   String jsonStr;
-  if (!dialWithGoogle(nodeName, "check", jsonStr)) return (0);
+  if (!dialWithGoogle(nodeName, F("check"), jsonStr)) return (0);
   JSONVar jsonData = JSON.parse(jsonStr);
   return (int)jsonData["baseversion"];
 }
@@ -385,7 +390,7 @@ void JobSendHisto() {
   MyLittleFS.remove(HISTO_FNAME);
   MyLittleFS.rename(F("/histo.tmp"), HISTO_FNAME);
   Events.delayedPush(1 * 60 * 1000, evSendHisto); // send histo in 5 minutes
-  Serial.println("more histo to send");
+  Serial.println(F("more histo to send"));
 }
 
 
