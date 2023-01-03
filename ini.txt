@@ -1,0 +1,12 @@
+NODE=nom du node // nomage de la porte
+WIFI=ssid,password  // config wifi
+GKEY=AKfycbycR7N4a3pI...  // key gsheet
+BINDWITH=nodename,....     // nodes valide pour jumelage
+DELAYUNLOCK=xxx   // nombre de seconde pour signaler une portez maintenue ouverte  30 sec part defaut  (0 = pas de signalement)
+
+
+RAZCONF // effacement configuation
+RAZHISTO // effacement historique
+CHECK    // controle version base
+RBADGE   // force relecture de la liste badges
+RPLAGE   // force relecture de la liste des plages horaires
