@@ -1,0 +1,659 @@
+Start listenUDP
+Received data from 192.168.3.218:23423: EVENT 2	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 192.168.3.218:23423: EVENT 2	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 192.168.3.218:23423: EVENT 2	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 192.168.3.218:23423: EVENT 2	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 192.168.3.218:23423: EVENT 3	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 192.168.3.218:23423: EVENT 3	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 192.168.3.218:23423: EVENT 3	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 192.168.3.218:23423: EVENT 3	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 192.168.3.218:23423: EVENT 4	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 192.168.3.218:23423: EVENT 4	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 192.168.3.218:23423: EVENT 4	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 192.168.3.218:23423: EVENT 4	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 192.168.3.218:23423: EVENT 5	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 192.168.3.218:23423: EVENT 5	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 192.168.3.218:23423: EVENT 5	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 192.168.3.218:23423: EVENT 5	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 192.168.3.218:23423: EVENT 6	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 192.168.3.218:23423: EVENT 6	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 192.168.3.218:23423: EVENT 6	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 192.168.3.218:23423: EVENT 6	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 4	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 4	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 4	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 4	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 4	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 4	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 4	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 4	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 5	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 5	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 5	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 5	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 5	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 5	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 5	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 5	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 6	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 6	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 6	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 6	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 6	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 6	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 6	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 6	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 7	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 7	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 7	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 7	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 7	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 7	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 7	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 7	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 8	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 8	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 8	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 8	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 8	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 8	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 8	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 8	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 9	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 9	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 9	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 9	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 9	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 9	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 9	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 9	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 10	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 10	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 10	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 10	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 10	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 10	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 10	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 10	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 11	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 11	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 11	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 11	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 11	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 11	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 11	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 11	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 12	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 12	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 12	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 12	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 12	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 13	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 13	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 13	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 13	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 13	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 13	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 13	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 13	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 14	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 14	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 14	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 14	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 14	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 14	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 14	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 14	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 15	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 15	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 15	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 15	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 15	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 15	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 15	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 15	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 16	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 16	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 16	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 16	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 16	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 16	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 16	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 16	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 17	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 17	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 17	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 17	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 17	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 17	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 17	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 17	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 18	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 18	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 18	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 18	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 18	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 18	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 18	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 18	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 19	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 19	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 19	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 19	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 19	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 19	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 19	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 19	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 20	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 20	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 20	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 20	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 20	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 20	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 20	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 20	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 21	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 21	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 21	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 21	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 21	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 21	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 21	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 21	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 22	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 22	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 22	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 22	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 22	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 22	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 22	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 22	BetaporteCDB	{"action":"badgeErr","userid":""}
+
+Received data from 10.10.1.210:23423: EVENT 23	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 23	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 23	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 23	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 23	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 23	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 23	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 23	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 24	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 24	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 24	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 24	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 24	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 24	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 24	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 24	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 25	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 25	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 25	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 25	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 25	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 25	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 25	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 25	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 26	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 26	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 26	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 26	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 26	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 26	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 26	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 26	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 27	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 27	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 27	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 27	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 27	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 27	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 27	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 27	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 28	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 28	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 28	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 28	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 28	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 28	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 28	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 28	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 29	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 29	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 29	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 29	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 29	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 29	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 29	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 29	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 30	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 30	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 30	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 30	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 30	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 30	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 30	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 30	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 31	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 31	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 31	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 31	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 31	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 31	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 31	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 31	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 32	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 32	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 32	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 32	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 32	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 32	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 32	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 32	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 33	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 33	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 33	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 33	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 33	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 33	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 33	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 33	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 34	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 34	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 34	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 34	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 34	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 34	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 34	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 34	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 35	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 35	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 35	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 35	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 35	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 35	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 35	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 35	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 36	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 36	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 36	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 36	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 36	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 36	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 36	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 36	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 37	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 37	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 37	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 37	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 37	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 37	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 37	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 37	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 38	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 38	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 38	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 38	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 38	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 38	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 38	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 38	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 39	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 39	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 39	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 39	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 39	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 39	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 39	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 39	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 40	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 40	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 40	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 40	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 40	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 40	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 40	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 40	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 41	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 41	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 41	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 41	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 41	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 41	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 41	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 41	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 42	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 42	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 42	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 42	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 42	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 42	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 42	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+
+Received data from 10.10.1.210:23423: EVENT 42	BetaporteCDB	{"action":"badge","userid":"Pierre CB"}
+

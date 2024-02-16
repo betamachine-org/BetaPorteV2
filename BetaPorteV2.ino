@@ -103,7 +103,7 @@ enum tUserEventCode {
 //  Led0 genere un evenement evLed0 a chaque clignotement de la led precablée sur la platine
 //  Keyboard genere un evenement evChar a char caractere recu et un evenement evString a chaque ligne recue
 //  Debug permet sur reception d'un "T" sur l'entrée Serial d'afficher les infos de charge du CPU
-
+#define  DEBUG_ON
 //#define DEFAULT_PIN
 // les sortie pour la led et le poussoir sont definis dans esp8266.h avec  LED0_PIN  (BP0 n'est pas utilisé ici)
 #include <BetaEvents.h>
@@ -795,7 +795,7 @@ void loop() {
 
     case evInChar: {
         if (Debug.trackTime < 2) {
-          char aChar = Keyboard.inputChar;
+          //char aChar = Keyboard.inputChar;
           //          if (isPrintable(aChar)) {
           //            D_println(aChar);
           //          } else {

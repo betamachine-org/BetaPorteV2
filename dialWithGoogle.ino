@@ -132,7 +132,7 @@ String encodeUri(const String aUri) {
   String answer = "";
   String specialChar = F(".-~_{}[],;:\"\\");  // add  !=- ???
   // uri encode maison :)
-  for (int N = 0; N < aUri.length(); N++) {
+  for (uint N = 0; N < aUri.length(); N++) {
     char aChar = aUri[N];
     //TODO:  should I keep " " to "+" conversion ????  save 2 char but oldy
     if (aChar == ' ') {
